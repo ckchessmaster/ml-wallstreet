@@ -34,6 +34,7 @@ namespace DataManager_API
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseStaticFiles();
             app.UseMvc();
         }
     }

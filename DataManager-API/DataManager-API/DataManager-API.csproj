@@ -16,4 +16,13 @@
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="Healthy.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Controllers\ValuesController.cs" />
+    <Compile Remove="Services\IModelService.cs" />
+    <Compile Remove="Services\ValueService.cs" />
+    <Compile Remove="Controllers\ValuesController.cs" />
+  </ItemGroup>
 </Project>
