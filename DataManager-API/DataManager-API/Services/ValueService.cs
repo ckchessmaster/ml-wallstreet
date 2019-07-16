@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace MLServiceAPI.Services
+namespace DataManager_API.Services
 {
     public class ValueService : IModelService
     {
-        public ValueService()
-        {
-        }
 
         public void createValue(object aValue)
         {

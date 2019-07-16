@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-namespace MLServiceAPI.Services
+namespace DataManager_API.Services
 {
     public interface IModelService
     {
