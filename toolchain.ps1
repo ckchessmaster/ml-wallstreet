@@ -5,10 +5,11 @@ Pop-Location
 
 
 $folder = Resolve-Path "DataManager-API"
+Push-Location $folder
 dotnet publish -c Release
 Pop-Location
 
-$folder = Resolve-Path "ML=Service-API"
+$folder = Resolve-Path "MLService-API"
 Push-Location $folder
 dotnet publish -c Release
 Pop-Location
