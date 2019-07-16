@@ -9,7 +9,7 @@ namespace DataManager_API.Controllers
         [HttpGet]
         public IActionResult Get() // This method runs a health check and returns a JSON payload
         {
-            return Content("{ \"healthy\":\"true\"}", "application/json");
+            return Content("{ \"healthy\":true}", "application/json");
         }
     }
 }

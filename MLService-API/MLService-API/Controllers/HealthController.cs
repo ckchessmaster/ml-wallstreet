@@ -9,7 +9,7 @@ namespace MLService_API.Controllers
         [HttpGet]
         public IActionResult Get()
         {
-            return Content("{ \"healthy\":\"true\"}", "application/json");
+            return Content("{ \"healthy\":true}", "application/json");
         }
     }
 }
