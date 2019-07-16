@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace DataManager_API.Controllers
 {
@@ -10,10 +9,12 @@ namespace DataManager_API.Controllers
     public class ValuesController : Controller
     {
         // GET api/values
-        [HttpGet]
-        public IEnumerable<string> Get()
+        public String Get()
         {
-            return new string[] { "value1", "value2" };
+            var json1 = @"{""name"":""John Doe"",""age"":20}";
+            object o = JsonConvert.DeserializeObject(json1);
+            string json2 = JsonConvert.SerializeObject(o, Formatting.Indented);
+            return json1.ToString();
         }
 
         // GET api/values/5

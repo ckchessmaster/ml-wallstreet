@@ -24,7 +24,6 @@ namespace DataManager_API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddMiddlewareAnalysis();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
