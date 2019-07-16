@@ -7,13 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace DataManager_API.Controllers
 {
     [Route("api/[controller]")]
-    public class ValuesController : Controller
+    public class HealthController : Controller
     {
         // GET api/values
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IActionResult Get()
         {
-            return new string[] { "value1", "value2" };
+            return Content("{ \"healthy\":\"true\"}", "application/json");
         }
 
         // GET api/values/5
