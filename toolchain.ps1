@@ -1,1 +1,1 @@
-echo Get-Location
+Write-Host Get-Location
