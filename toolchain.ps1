@@ -1,1 +1,1 @@
-Write-Host Get-Location
+Get-Location
