@@ -1,4 +1,8 @@
 param (
+    [Parameter(Mandatory = $false)]
+    [Alias('s')]
+    [string]$server,
+
     [Parameter(Mandatory = $true)]
     [Alias('d')]
     [string]$dbName,
@@ -8,9 +12,17 @@ param (
     [string]$project
 )
 
+$serverName = "."
+
+if ($server) {
+    $serverName = $server
+}
+
+Write-Host $serverName
+
 Write-Host "Checking for scripts to run..."
 
-$previouslyRunScripts = Invoke-Sqlcmd -ServerInstance "localhost" -Database $dbName -Query "SELECT ScriptName FROM PreviouslyRunScripts"
+$previouslyRunScripts = Invoke-Sqlcmd -ServerInstance $serverName -Database $dbName -Query "SELECT ScriptName FROM PreviouslyRunScripts"
 
 Push-Location ($PSScriptRoot + "\" + $project + "\db-scripts")
 
@@ -23,8 +35,8 @@ $finalScriptList = $scriptsThatHaveNotBeenRun | Sort-Object -Property @{Expressi
 Write-Host "Running" $finalScriptList.Length "scripts..."
 $finalScriptList | ForEach-Object -Process {
     Write-Host "Running script:" $_
-    $commandOutput = Invoke-Sqlcmd -ServerInstance "localhost" -Database $dbName -InputFile $_
-    $insertOutput = Invoke-Sqlcmd -ServerInstance "localhost" -Database $dbName -Query "INSERT INTO PreviouslyRunScripts (ScriptName, RunDate) VALUES ('$_', GETDATE())"
+    $commandOutput = Invoke-Sqlcmd -ServerInstance $serverName -Database $dbName -InputFile $_
+    $insertOutput = Invoke-Sqlcmd -ServerInstance $serverName -Database $dbName -Query "INSERT INTO PreviouslyRunScripts (ScriptName, RunDate) VALUES ('$_', GETDATE())"
 }
 
 Pop-Location
