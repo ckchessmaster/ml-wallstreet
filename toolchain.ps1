@@ -20,4 +20,3 @@ Remove-Item -Force -Path ..\..\hosting\DataManager-API -Recurse #Delete the old 
 Move-Item -Force -Path .\DataManager-API\bin\Release\netcoreapp2.2\win-x64\publish -Destination ..\..\hosting\DataManager-API # Move the new code
 Pop-Location # Go back to where we started
 Start-WebAppPool -Name "data-manager-api" # Start the app
-
