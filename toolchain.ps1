@@ -1,4 +1,4 @@
-$basePath = ($PSScriptRoot + "\")
+$basePath = ("C:\Users\ckche\Desktop\ML Stock Project\ml-wallstreet\")
 
 $gitResults = git pull
 
