@@ -7,13 +7,16 @@ using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace MLWCore.Security
 {
     public class MLWUserStore : 
         IUserStore<MLWUser>, 
         IUserEmailStore<MLWUser>, 
-        IUserPasswordStore<MLWUser>
+        IUserPasswordStore<MLWUser>,
+        IUserClaimStore<MLWUser>
     {
         private readonly IConfiguration config;
 
@@ -261,6 +264,46 @@ namespace MLWCore.Security
         private SqlConnection GetSqlConnection()
         {
             return new SqlConnection(config.GetConnectionString("MLWCoreConnectionString"));
+        }
+
+        public async Task<IList<Claim>> GetClaimsAsync(MLWUser user, CancellationToken cancellationToken)
+        {
+            if (user?.Id == null)
+                throw new NotImplementedException();
+
+            var claims = new List<Claim>();
+
+            string sql = "SELECT IsActive FROM MLWUser WHERE UserName = @UserName";
+
+            using (var con = GetSqlConnection())
+            {
+                var result = await con.QueryFirstOrDefaultAsync<bool>(sql, new { UserName = user.UserName });
+
+                if (result)
+                    claims.Add(new Claim("Active", "true"));
+            }
+
+            return claims;
+        }
+
+        public Task AddClaimsAsync(MLWUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task ReplaceClaimAsync(MLWUser user, Claim claim, Claim newClaim, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RemoveClaimsAsync(MLWUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IList<MLWUser>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

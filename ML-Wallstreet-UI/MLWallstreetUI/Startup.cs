@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MLWCore.Security;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace MLWallstreetUI
 {
@@ -35,6 +36,8 @@ namespace MLWallstreetUI
                 .AddUserStore<MLWUserStore>();
 
             services.AddTransient<SignInManager<MLWUser>, SignInManager<MLWUser>>();
+
+            services.AddAuthorization(options => options.AddPolicy("UsersMustBeActive", policy => policy.RequireClaim("Active")));
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
