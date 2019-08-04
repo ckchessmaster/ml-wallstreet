@@ -2,9 +2,20 @@ $basePath = ("C:\Users\ckche\Desktop\ML Stock Project\ml-wallstreet\")
 
 $gitResults = git pull
 
+$forceRebuild = false
+
+# Build the MLWCore Class Library (This has to happen first in case of references to it)
+if ($gitResults -match "MLWCore") {
+    $forceRebuild = true
+
+    $folder = $basePath + "MLWCore"
+    Push-Location $folder
+    dotnet publish -c Release -r win-x64
+    Pop-Location
+}
 
 # Build the UI
-if ($gitResults -match "ML-Wallstreet-UI") {
+if ($gitResults -match "ML-Wallstreet-UI" -or $forceRebuild -eq (true)) {
     Stop-WebAppPool -Name "ml-wallstreet-ui" # Stop the app
     $folder = $basePath + "ML-Wallstreet-UI"
     Push-Location $folder # Navigate to the code location
@@ -16,7 +27,7 @@ if ($gitResults -match "ML-Wallstreet-UI") {
 }
 
 # Build the DataManager API
-if ($gitResults -match "DataManager-API") {
+if ($gitResults -match "DataManager-API" -or $forceRebuild -eq (true)) {
     Stop-WebAppPool -Name "data-manager-api" # Stop the app
     & ($basePath + "db-update.ps1") -server "localhost" -dbName "DataManager" -project "DataManager-API" # Update the Database
     $folder = $basePath + "DataManager-API"
@@ -29,7 +40,7 @@ if ($gitResults -match "DataManager-API") {
 }
 
 # Build the MLService API
-if ($gitResults -match "MLService-API") {
+if ($gitResults -match "MLService-API" -or $forceRebuild -eq (true)) {
     Stop-WebAppPool -Name "ml-service-api" # Stop the app
     & ($basePath + "db-update.ps1") -server "localhost" -dbName "MLService" -project "MLService-API" # Update the Database
     $folder = $basePath + "MLService-API"
@@ -40,3 +51,5 @@ if ($gitResults -match "MLService-API") {
     Pop-Location # Go back to where we started
     Start-WebAppPool -Name "ml-service-api" # Start the app
 }
+
+
