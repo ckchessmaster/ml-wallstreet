@@ -1,16 +1,19 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
 namespace MLWCore.Security
 {
-    public class MLWUserStore : IUserStore<MLWUser>, IUserEmailStore<MLWUser>
+    public class MLWUserStore : 
+        IUserStore<MLWUser>, 
+        IUserEmailStore<MLWUser>, 
+        IUserPasswordStore<MLWUser>
     {
         private readonly IConfiguration config;
 
@@ -24,13 +27,18 @@ namespace MLWCore.Security
             if (user == null)
                 throw new ArgumentNullException();
 
-            user.IsActive = false;
-
-            string sql = "INSERT INTO MLWUser (MLWUserID, UserName, IsActive) VALUES (@MLWUserID, @UserName, @IsActive)";
+            string sql = @"
+                INSERT INTO MLWUser (MLWUserID, UserName, Email, Password, IsActive) 
+                VALUES (@MLWUserID, @UserName, @Email, @Password, @IsActive)";
 
             using (var con = GetSqlConnection())
             {
-                await con.ExecuteAsync(sql, new { MLWUserID = user.Id, UserName = user.UserName, IsActive = false });
+                await con.ExecuteAsync(sql, new {
+                    MLWUserID = user.Id,
+                    UserName = string.IsNullOrEmpty(user.UserName) ? user.Email : user.UserName,
+                    Email = user.Email,
+                    Password = user.PasswordHash,
+                    IsActive = false });
             }
 
             return new IdentityResult();
@@ -74,11 +82,11 @@ namespace MLWCore.Security
             if (string.IsNullOrEmpty(userId))
                 throw new ArgumentNullException();
 
-            string sql = "SELECT * FROM MLWUser WHERE MLWUserID = @UserID";
+            string sql = "SELECT * FROM MLWUser WHERE MLWUserID = @MLWUserID";
 
             using (var con = GetSqlConnection())
             {
-                var result = await con.QueryFirstOrDefaultAsync<MLWUser>(sql, new { UserID = userId });
+                var result = await con.QueryFirstOrDefaultAsync<MLWUser>(sql, new { MLWUserID = userId });
 
                 return result;
             }
@@ -109,11 +117,11 @@ namespace MLWCore.Security
                 return user.Email;
             }
 
-            string sql = "SELECT Email FROM MLWUser WHERE UserID = @UserID";
+            string sql = "SELECT Email FROM MLWUser WHERE MLWUserID = @MLWUserID";
 
             using (var con = GetSqlConnection())
             {
-                return await con.QueryFirstOrDefaultAsync<string>(sql, new { UserID = user.Id });
+                return await con.QueryFirstOrDefaultAsync<string>(sql, new { MLWUserID = user.Id });
             }
         }
 
@@ -137,7 +145,10 @@ namespace MLWCore.Security
 
         public async Task<string> GetUserIdAsync(MLWUser user, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            if (user == null || string.IsNullOrEmpty(user.Id))
+                throw new ArgumentNullException();
+            
+            return user.Id;
         }
 
         public async Task<string> GetUserNameAsync(MLWUser user, CancellationToken cancellationToken)
@@ -145,14 +156,55 @@ namespace MLWCore.Security
             if (user == null)
                 throw new ArgumentNullException();
 
-            string sql = "SELECT UserName FROM MLWUser WHERE UserID = @UserID";
+            if (!string.IsNullOrEmpty(user.UserName))
+                return user.UserName;
+
+            string sql = "SELECT UserName FROM MLWUser WHERE MLWUserID = @MLWUserID";
 
             using (var con = GetSqlConnection())
             {
-                var result = await con.QueryFirstOrDefaultAsync<string>(sql, new { UserID = user.Id });
+                var result = await con.QueryFirstOrDefaultAsync<string>(sql, new { MLWUserID = user.Id });
 
                 return result;
             }
+        }
+
+        public async Task<string> GetPasswordHashAsync(MLWUser user, CancellationToken cancellationToken)
+        {
+            if (user == null)
+                throw new ArgumentNullException();
+
+            if (!string.IsNullOrEmpty(user.PasswordHash))
+                return user.PasswordHash;
+
+            string sql = "SELECT Password FROM MLWUser WHERE MLWUserID = @MLWUserID OR UserName LIKE @UserName";
+
+            using (var con = GetSqlConnection())
+            {
+                var result = await con.QueryFirstOrDefaultAsync<string>(sql, new { MLWUserID = user.Id, UserName = user.UserName });
+                return result;
+            }
+        }
+
+        public async Task<bool> HasPasswordAsync(MLWUser user, CancellationToken cancellationToken)
+        {
+            // Every user MUST have a password
+            return true;
+        }
+
+        public async Task SetPasswordHashAsync(MLWUser user, string passwordHash, CancellationToken cancellationToken)
+        {
+            if (user == null || string.IsNullOrEmpty(passwordHash))
+                throw new ArgumentNullException();
+
+            string sql = "UPDATE MLWUser SET Password = @Password";
+
+            using (var con = GetSqlConnection())
+            {
+                await con.ExecuteAsync(sql, new { MLWUserID = user.Id, Password = passwordHash });
+            }
+
+            user.PasswordHash = passwordHash;
         }
 
         public async Task SetEmailAsync(MLWUser user, string email, CancellationToken cancellationToken)
@@ -160,12 +212,14 @@ namespace MLWCore.Security
             if (user == null || string.IsNullOrEmpty(email))
                 throw new ArgumentNullException();
 
-            string sql = "UPDATE MLWUser SET Email = @Email WHERE UserID = @UserID";
+            string sql = "UPDATE MLWUser SET Email = @Email WHERE MLWUserID = @MLWUserID";
 
             using (var con = GetSqlConnection())
             {
-                await con.ExecuteAsync(sql, new { UserID = user.Id, Email = email });
+                await con.ExecuteAsync(sql, new { MLWUserID = user.Id, Email = email });
             }
+
+            user.Email = email;
         }
 
         public async Task SetEmailConfirmedAsync(MLWUser user, bool confirmed, CancellationToken cancellationToken)
@@ -188,12 +242,14 @@ namespace MLWCore.Security
             if (user == null)
                 throw new ArgumentNullException();
 
-            string sql = "UPDATE MLWUser SET UserName = @UserName WHERE UserID = @UserID";
+            string sql = "UPDATE MLWUser SET UserName = @UserName WHERE MLWUserID = @MLWUserID";
 
             using (var con = GetSqlConnection())
             {
-                await con.ExecuteAsync(sql, new { UserID = user.Id, UserName = userName });
+                await con.ExecuteAsync(sql, new { MLWUserID = user.Id, UserName = userName });
             }
+
+            user.UserName = userName;
         }
 
         public async Task<IdentityResult> UpdateAsync(MLWUser user, CancellationToken cancellationToken)
