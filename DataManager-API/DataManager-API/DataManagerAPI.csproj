@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
@@ -25,5 +25,10 @@
     <Compile Remove="Services\IModelService.cs" />
     <Compile Remove="Services\ValueService.cs" />
     <Compile Remove="Controllers\ValuesController.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="MLWCore">
+      <HintPath>..\..\MLWCore\MLWCore\MLWCore\bin\Release\netcoreapp2.2\MLWCore.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

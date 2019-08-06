@@ -27,7 +27,8 @@ namespace DataManagerAPI.Controllers
                 return new BadRequestResult();
             }
 
-
+            // Hash the apiKey
+            var salt = config.GetValue<string>("Security:Salt")
 
             return new JsonResult(new { Token = apiKey });
         }
