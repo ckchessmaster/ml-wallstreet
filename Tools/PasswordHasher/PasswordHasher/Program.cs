@@ -10,6 +10,12 @@ namespace PasswordHasher
         {
             Console.Write("Enter a password: ");
             string password = Console.ReadLine();
+            if (string.IsNullOrEmpty(password))
+            {
+                password = Guid.NewGuid().ToString();
+            }
+
+            Console.WriteLine("Your password: " + password);
 
             // generate a 128-bit salt using a secure PRNG
             byte[] salt = new byte[128 / 8];

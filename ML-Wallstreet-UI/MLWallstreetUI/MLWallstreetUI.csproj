@@ -12,18 +12,12 @@
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.2.3" />
+    <PackageReference Include="MLWCore" Version="1.0.0" />
   </ItemGroup>
 
 
   <ItemGroup>
     <Folder Include="Data\" />
-  </ItemGroup>
-
-
-  <ItemGroup>
-    <Reference Include="MLWCore">
-      <HintPath>..\..\MLWCore\MLWCore\MLWCore\bin\Debug\netcoreapp2.2\MLWCore.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>

@@ -3,8 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MLWCore.Security;
 using Microsoft.Extensions.Configuration;
+using System.Text;
+using MLWCore.Security;
 
 namespace DataManagerAPI.Controllers
 {
@@ -28,9 +29,20 @@ namespace DataManagerAPI.Controllers
             }
 
             // Hash the apiKey
-            var salt = config.GetValue<string>("Security:Salt")
+            var dataManagerApiKey = new Password
+            {
+                Hash = this.config.GetValue<string>("Security:ApiKey:Hash"),
+                Salt = this.config.GetValue<string>("Security:ApiKey:Salt")
+            };
 
-            return new JsonResult(new { Token = apiKey });
+            Password hashedKey = SecurityHelper.HashPassword(apiKey, dataManagerApiKey.Salt);
+
+            if (hashedKey.Equals(dataManagerApiKey))
+            {
+                return new JsonResult(new { Token = SecurityHelper.GenerateToken(this.config.GetValue<string>("Security:SigningKey")) });
+            }
+
+            return new UnauthorizedResult();
         }
     }
 }

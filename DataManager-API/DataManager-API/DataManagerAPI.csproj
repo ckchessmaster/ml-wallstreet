@@ -11,6 +11,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.6" />
+    <PackageReference Include="Dapper" Version="1.60.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="2.2.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.5.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,7 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="MLWCore">
-      <HintPath>..\..\MLWCore\MLWCore\MLWCore\bin\Release\netcoreapp2.2\MLWCore.dll</HintPath>
+      <HintPath>..\..\MLWCore\MLWCore\MLWCore\bin\Debug\netcoreapp2.2\MLWCore.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>
