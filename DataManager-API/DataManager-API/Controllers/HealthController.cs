@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
-namespace DataManager_API.Controllers
+namespace DataManagerAPI.Controllers
 {
     [Route("api/[controller]")]
     public class HealthController : Controller
@@ -9,7 +10,7 @@ namespace DataManager_API.Controllers
         [HttpGet]
         public IActionResult Get() // This method runs a health check and returns a JSON payload
         {
-            return Content("{ \"healthy\":true}", "application/json");
+            return new JsonResult(new { Healthy = true });
         }
     }
 }

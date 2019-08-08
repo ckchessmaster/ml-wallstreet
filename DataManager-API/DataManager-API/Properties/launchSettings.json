@@ -16,7 +16,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "DataManager_API": {
+    "DataManagerAPI": {
       "commandName": "Project",
       "launchBrowser": true,
       "launchUrl": "api/values",
