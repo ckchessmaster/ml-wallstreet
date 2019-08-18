@@ -9,5 +9,7 @@ namespace DataManagerAPI.Models.RequestModels
         public DateTime? EndDate { get; set; }
 
         public string SearchQuery { get; set; }
+
+        public int? PageSize { get; set; }
     }
 }

@@ -33,7 +33,7 @@ namespace DataManagerAPI.Services
             this.config = config;
         }
 
-        public async Task<ContextualWebSearchResult> LoadNewData(DateTime? startDate, DateTime? endDate, string searchQuery)
+        public async Task<ContextualWebSearchResult> LoadNewData(DateTime? startDate, DateTime? endDate, string searchQuery, int? pageSize)
         {
             UriBuilder uriBuilder = new UriBuilder
             {
@@ -43,9 +43,9 @@ namespace DataManagerAPI.Services
             };
 
             var queryBuilder = new StringBuilder();
-            queryBuilder.Append("autoCorrect = false");
+            queryBuilder.Append("autoCorrect=false");
             queryBuilder.Append("&pageNumber=1");
-            queryBuilder.Append("&pageSize=10");
+            queryBuilder.AppendFormat("&pageSize={0}", pageSize ?? 10);
             queryBuilder.AppendFormat("&q={0}", string.IsNullOrEmpty(searchQuery) ? "news" : searchQuery);
             queryBuilder.Append("&safeSearch=false");
 
@@ -89,6 +89,7 @@ namespace DataManagerAPI.Services
                             if (!con.Query<int>(lookupSql, new { Url = item.Url }, transaction).Any())
                             {
                                 con.Execute(
+
                                     insertSql,
                                     new
                                     {

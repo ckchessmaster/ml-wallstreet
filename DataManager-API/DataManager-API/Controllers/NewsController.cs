@@ -25,7 +25,11 @@ namespace DataManagerAPI.Controllers
         [Route("LoadNewData")]
         public async Task<IActionResult> LoadNewData([FromBody]LoadNewDataRequestModel requestModel)
         {
-            var results = await dataLoaderService.LoadNewData(requestModel.StartDate, requestModel.EndDate, requestModel.SearchQuery);
+            var results = await dataLoaderService.LoadNewData(
+                requestModel.StartDate, 
+                requestModel.EndDate, 
+                requestModel.SearchQuery, 
+                requestModel.PageSize);
 
             return new JsonResult(new { Results = results });
         }
