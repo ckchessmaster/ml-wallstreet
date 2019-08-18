@@ -1,6 +1,13 @@
-﻿using DataManagerAPI.Enums;
+﻿using Dapper;
+using DataManagerAPI.Enums;
+using DataManagerAPI.Models.ServiceModels.ContextualWebSearch;
+using DataManagerAPI.Utils;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -12,14 +19,22 @@ namespace DataManagerAPI.Services
     {
         private readonly HttpClient client;
 
-        public DataLoaderService(HttpClient client)
+        private readonly SqlHelper sqlHelper;
+
+        private readonly IConfiguration config;
+
+        public DataLoaderService(
+            HttpClient client,
+            SqlHelper sqlHelper,
+            IConfiguration config)
         {
             this.client = client;
+            this.sqlHelper = sqlHelper;
+            this.config = config;
         }
 
-        public async Task<string> LoadNewData(DateTime? startDate, DateTime? endDate, string searchQuery)
+        public async Task<ContextualWebSearchResult> LoadNewData(DateTime? startDate, DateTime? endDate, string searchQuery)
         {
-
             UriBuilder uriBuilder = new UriBuilder
             {
                 Scheme = "https",
@@ -50,7 +65,42 @@ namespace DataManagerAPI.Services
             {
                 results.EnsureSuccessStatusCode();
 
-                return await results.Content.ReadAsStringAsync();
+                string jsonString = await results.Content.ReadAsStringAsync();
+                var searchResults = JsonConvert.DeserializeObject<ContextualWebSearchResult>(jsonString);
+
+                // Save the results to the DB
+                using (SqlConnection con = sqlHelper.GetSqlConnection())
+                {
+                    if (con.State != ConnectionState.Open)
+                    {
+                        con.Open();
+                    }
+
+                    using (SqlTransaction transaction = con.BeginTransaction())
+                    {
+                        string sql = @"INSERT INTO NewsArticle (NewsArticleID, Url, Date, Title, RawText)
+                                   VALUES (@NewsArticleID, @Url, @Date, @Title, @RawText)";
+
+                        foreach (ContextualWebSearchResultItem item in searchResults.Value)
+                        {
+                            con.Execute(
+                                sql, 
+                                new
+                                {
+                                    NewsArticleID = Guid.NewGuid(),
+                                    Url = item.Url,
+                                    Date = item.DatePublished,
+                                    Title = item.Title,
+                                    RawText = item.Body
+                                }, 
+                                transaction: transaction);
+                        }
+
+                        transaction.Commit();
+                    }
+                }
+
+                return searchResults;
             }
         }
     }

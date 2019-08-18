@@ -27,7 +27,7 @@ namespace DataManagerAPI.Controllers
         {
             var results = await dataLoaderService.LoadNewData(requestModel.StartDate, requestModel.EndDate, requestModel.SearchQuery);
 
-            return new JsonResult(new { Test = results });
+            return new JsonResult(new { Results = results });
         }
     }
 }

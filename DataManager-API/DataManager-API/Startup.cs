@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using DataManagerAPI.Services;
+using DataManagerAPI.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -36,6 +37,7 @@ namespace DataManagerAPI
             services.AddSingleton<HttpClient>(client);
 
             services.AddSingleton<DataLoaderService, DataLoaderService>();
+            services.AddSingleton<SqlHelper, SqlHelper>();
 
             // Configure jwt authentication
             services.AddAuthentication(x =>

@@ -6,6 +6,8 @@ BEGIN
 		NewsArticleID UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_NewsArticle PRIMARY KEY,
 		Url varchar(255) NOT NULL,
 		Date DATETIME NOT NULL,
-		RawText nvarchar(MAX)
+		Title nvarchar(255),
+		RawText nvarchar(MAX),
+		CleanText nvarchar(MAX)
 	)
 END
