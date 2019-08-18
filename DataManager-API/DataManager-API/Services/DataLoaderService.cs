@@ -78,22 +78,28 @@ namespace DataManagerAPI.Services
 
                     using (SqlTransaction transaction = con.BeginTransaction())
                     {
-                        string sql = @"INSERT INTO NewsArticle (NewsArticleID, Url, Date, Title, RawText)
+                        const string insertSql = @"INSERT INTO NewsArticle (NewsArticleID, Url, Date, Title, RawText)
                                    VALUES (@NewsArticleID, @Url, @Date, @Title, @RawText)";
+
+                        const string lookupSql = @"SELECT 1 FROM NewsArticle WHERE Url like @Url";
 
                         foreach (ContextualWebSearchResultItem item in searchResults.Value)
                         {
-                            con.Execute(
-                                sql, 
-                                new
-                                {
-                                    NewsArticleID = Guid.NewGuid(),
-                                    Url = item.Url,
-                                    Date = item.DatePublished,
-                                    Title = item.Title,
-                                    RawText = item.Body
-                                }, 
-                                transaction: transaction);
+                            // Make sure the article doesn't already exist
+                            if (!con.Query<int>(lookupSql, new { Url = item.Url }, transaction).Any())
+                            {
+                                con.Execute(
+                                    insertSql,
+                                    new
+                                    {
+                                        NewsArticleID = Guid.NewGuid(),
+                                        Url = item.Url,
+                                        Date = item.DatePublished,
+                                        Title = item.Title,
+                                        RawText = item.Body
+                                    },
+                                    transaction);
+                            }
                         }
 
                         transaction.Commit();
