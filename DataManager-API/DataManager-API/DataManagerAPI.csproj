@@ -26,13 +26,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="Controllers\ValuesController.cs" />
-    <Compile Remove="Services\IModelService.cs" />
-    <Compile Remove="Services\ValueService.cs" />
     <Compile Remove="Controllers\ValuesController.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="MLWCore">
-      <HintPath>..\..\MLWCore\MLWCore\MLWCore\bin\Debug\netcoreapp2.2\MLWCore.dll</HintPath>
+      <HintPath>lib\MLWCore.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

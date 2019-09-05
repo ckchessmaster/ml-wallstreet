@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MLWCore.Security;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using MLWallstreetUI.Services;
 
 namespace MLWallstreetUI
 {
@@ -23,6 +24,10 @@ namespace MLWallstreetUI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Dependency Injection
+            services.AddSingleton<ApiService, ApiService>();
+
+            // Cookies
             services.Configure<CookiePolicyOptions>(options =>
             {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.
@@ -30,6 +35,7 @@ namespace MLWallstreetUI
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            // Security
             services.AddDefaultIdentity<MLWUser>()
                 .AddDefaultUI(UIFramework.Bootstrap4)
                 .AddUserManager<UserManager<MLWUser>>()
@@ -39,6 +45,7 @@ namespace MLWallstreetUI
 
             services.AddAuthorization(options => options.AddPolicy("UsersMustBeActive", policy => policy.RequireClaim("Active")));
 
+            // Misc
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
 

@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using DataManagerAPI.Services;
+using DataManagerAPI.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -28,6 +31,14 @@ namespace DataManagerAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // Dependency Injection
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-RapidAPI-Key", Configuration.GetValue<string>("RapidApi:ApiKey"));
+            services.AddSingleton<HttpClient>(client);
+
+            services.AddSingleton<DataLoaderService, DataLoaderService>();
+            services.AddSingleton<SqlHelper, SqlHelper>();
+
             // Configure jwt authentication
             services.AddAuthentication(x =>
             {
