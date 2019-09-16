@@ -11,31 +11,37 @@
 
 <div>
     <h2>Management</h2>
-    <form method="post">
+    <h3>Data Retrieval</h3>
+    <form id="dataRetrievalForm" method="post">
         <div class="form-row">
             <div class="form-group col-sm-3">
                 <label for="apiSelect">Search API</label>
-                <select id="apiSelect" class="custom-select" asp-for="DataRetrievalModelBinding.ApiType" asp-items="Html.GetEnumSelectList<DataRetrievalSearchApiType>()">
+                <select id="apiSelect" class="custom-select" asp-for="AdminDashboardModel.DataRetrievalModelBinding.ApiType" asp-items="Html.GetEnumSelectList<DataRetrievalSearchApiType>()">
                 </select>
             </div>
             <div class="form-group col-sm-3">
                 <label for="searchQueryTextbox">Search Query</label>
-                <input id="searchQueryTextbox" type="text" class="form-control" asp-for="DataRetrievalModelBinding.SearchQuery" />
+                <input id="searchQueryTextbox" type="text" class="form-control" asp-for="AdminDashboardModel.DataRetrievalModelBinding.SearchQuery" />
             </div>
             <div class="form-group col-sm-2">
                 <label for="startDateTextbox">Start Date</label>
-                <input id="startDateTextbox" type="date" class="form-control" asp-for="DataRetrievalModelBinding.StartDate" />
+                <input id="startDateTextbox" type="date" class="form-control" asp-for="AdminDashboardModel.DataRetrievalModelBinding.StartDate" />
             </div>
             <div class="form-group col-sm-2">
                 <label for="endDateTextbox">End Date</label>
-                <input id="endDateTextbox" type="date" class="form-control" asp-for="DataRetrievalModelBinding.EndDate" />
+                <input id="endDateTextbox" type="date" class="form-control" asp-for="AdminDashboardModel.DataRetrievalModelBinding.EndDate" />
             </div>
             <div class="form-group col-sm-2">
-                <label for="numberOfResultsText">Number of Results</label>
-                <input id="numberOfResultsText" type="number" class="form-control" asp-for="DataRetrievalModelBinding.PageSize" value="10" />
+                <label for="numberOfResultsText">Results Per Day</label>
+                <input id="numberOfResultsText" type="number" class="form-control" asp-for="AdminDashboardModel.DataRetrievalModelBinding.PageSize" value="10" />
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">Retrieve</button>
+        <button type="submit" class="btn btn-primary" asp-page-handler="DataRetriever" onclick="return confirm('WARNING! This operation can take a very long time and could incur costs. Are you sure you want to continue?')">Retrieve</button>
+    </form>
+    <hr />
+    <h3>Data Cleaner</h3>
+    <form id="dataCleanerForm" method="post">
+        <button type="submit" class="btn btn-primary" asp-page-handler="DataCleaner" onclick="return confirm('WARNING! This operation can take a very long time. Are you sure you want to continue?')">Clean</button>
     </form>
     <hr />
 </div>

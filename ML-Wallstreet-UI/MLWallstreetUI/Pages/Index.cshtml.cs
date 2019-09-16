@@ -8,26 +8,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using MLWallstreetUI.Data.Enums;
+using MLWallstreetUI.Data.Models;
 using MLWallstreetUI.Services;
 using Newtonsoft.Json;
+using static MLWallstreetUI.Data.Models.AdminDashboardModel;
 
 namespace MLWallstreetUI.Pages
 {
     [Authorize(Policy = "UsersMustBeActive")]
     public class IndexModel : PageModel
     {
-        public class DataRetrievalModel
-        {
-            public DataRetrievalSearchApiType ApiType { get; set; }
-
-            public string SearchQuery { get; set; }
-
-            public int PageSize { get; set; }
-
-            public DateTime? StartDate { get; set; }
-
-            public DateTime? EndDate { get; set; }
-        }
+        
 
         private readonly ApiService apiService;
 
@@ -37,24 +28,35 @@ namespace MLWallstreetUI.Pages
         }
 
         [BindProperty]
-        public DataRetrievalModel DataRetrievalModelBinding { get; set; }
+        public AdminDashboardModel AdminDashboardModel { get; set; }
 
-        public void OnGet()
+        public IActionResult OnPostDataRetriever()
         {
+            RetrieveData();
 
+            return RedirectToPage("/Index");
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        private async Task RetrieveData()
+        {
+            var dataManager = await apiService.GetApi(ServiceApiType.DataManagerApi);
+            string jsonString = JsonConvert.SerializeObject(AdminDashboardModel.DataRetrievalModelBinding);
+
+            await dataManager.Client.PostAsync(dataManager.BaseUrl + "news/loadNewData", new StringContent(jsonString, Encoding.UTF8, "application/json"));
+        }
+
+        public IActionResult OnPostDataCleaner()
+        {
+            CleanData();
+
+            return RedirectToPage("/Index");
+        }
+
+        private async Task CleanData()
         {
             var dataManager = await apiService.GetApi(ServiceApiType.DataManagerApi);
 
-            string jsonString = JsonConvert.SerializeObject(DataRetrievalModelBinding);
-
-            var results = await dataManager.Client.PostAsync(dataManager.BaseUrl + "news/loadNewData", new StringContent(jsonString, Encoding.UTF8, "application/json"));
-
-            results.EnsureSuccessStatusCode();
-
-            return RedirectToPage("/Index");
+            await dataManager.Client.PostAsync(dataManager.BaseUrl + "news/clean", new StringContent("{}", Encoding.UTF8, "application/json"));
         }
     }
 }

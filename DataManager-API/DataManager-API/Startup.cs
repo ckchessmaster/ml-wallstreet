@@ -36,7 +36,7 @@ namespace DataManagerAPI
             client.DefaultRequestHeaders.Add("X-RapidAPI-Key", Configuration.GetValue<string>("RapidApi:ApiKey"));
             services.AddSingleton<HttpClient>(client);
 
-            services.AddSingleton<DataLoaderService, DataLoaderService>();
+            services.AddSingleton<DataManagementService, DataManagementService>();
             services.AddSingleton<SqlHelper, SqlHelper>();
 
             // Configure jwt authentication

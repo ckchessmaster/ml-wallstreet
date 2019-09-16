@@ -14,24 +14,33 @@ namespace DataManagerAPI.Controllers
     [Route("api/[controller]")]
     public class NewsController : Controller
     {
-        private readonly DataLoaderService dataLoaderService;
+        private readonly DataManagementService dataManagementService;
 
-        public NewsController(DataLoaderService dataLoaderService)
+        public NewsController(DataManagementService dataManagementService)
         {
-            this.dataLoaderService = dataLoaderService;
+            this.dataManagementService = dataManagementService;
         }
 
         [HttpPost]
         [Route("LoadNewData")]
         public async Task<IActionResult> LoadNewData([FromBody]LoadNewDataRequestModel requestModel)
         {
-            var results = await dataLoaderService.LoadNewData(
+            var results = await dataManagementService.LoadNewData(
                 requestModel.StartDate, 
                 requestModel.EndDate, 
                 requestModel.SearchQuery, 
                 requestModel.PageSize);
 
             return new JsonResult(new { Results = results });
+        }
+
+        [HttpPost]
+        [Route("Clean")]
+        public async Task<IActionResult> CleanData()
+        {
+            await dataManagementService.CleanData();
+
+            return new JsonResult(new { Results = "Success" });
         }
     }
 }
