@@ -41,9 +41,9 @@ namespace MLServiceAPI
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetValue<string>("Security:SigningKey"))),
                     ValidateIssuer = true,
-                    ValidIssuer = "DataManagerAPI",
+                    ValidIssuer = "MLServiceAPI",
                     ValidateAudience = true,
-                    ValidAudience = "DataManagerAPI"
+                    ValidAudience = "MLServiceAPI"
                 };
             });
 
