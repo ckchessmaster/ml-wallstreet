@@ -5,6 +5,10 @@ VisualStudioVersion = 16.0.29201.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MLServiceAPI", "MLService-API\MLServiceAPI.csproj", "{D011BF56-C4E1-4E05-BD1E-D1D63A379359}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MLServiceAPIML.Model", "MLService-APIML.Model\MLServiceAPIML.Model.csproj", "{C72064AD-504F-4505-B8DD-97B86CD0C774}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MLServiceAPIML.ConsoleApp", "MLService-APIML.ConsoleApp\MLServiceAPIML.ConsoleApp.csproj", "{C5810F77-6C0E-4AFD-B282-873B878C5202}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{D011BF56-C4E1-4E05-BD1E-D1D63A379359}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D011BF56-C4E1-4E05-BD1E-D1D63A379359}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D011BF56-C4E1-4E05-BD1E-D1D63A379359}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C72064AD-504F-4505-B8DD-97B86CD0C774}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C72064AD-504F-4505-B8DD-97B86CD0C774}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C72064AD-504F-4505-B8DD-97B86CD0C774}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C72064AD-504F-4505-B8DD-97B86CD0C774}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5810F77-6C0E-4AFD-B282-873B878C5202}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5810F77-6C0E-4AFD-B282-873B878C5202}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5810F77-6C0E-4AFD-B282-873B878C5202}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5810F77-6C0E-4AFD-B282-873B878C5202}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

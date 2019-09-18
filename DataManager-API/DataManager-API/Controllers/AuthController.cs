@@ -35,7 +35,7 @@ namespace DataManagerAPI.Controllers
 
             if (hashedKey.Equals(dataManagerApiKey))
             {
-                return new JsonResult(new { Token = SecurityHelper.GenerateToken(this.config.GetValue<string>("Security:SigningKey")) });
+                return new JsonResult(new { Token = SecurityHelper.GenerateToken(this.config.GetValue<string>("Security:SigningKey"), "DataManagerAPI", "DataManagerAPI") });
             }
 
             return new UnauthorizedResult();

@@ -50,7 +50,7 @@ namespace MLWCore.Security
             };
         }
 
-        public static string GenerateToken(string signingKey)
+        public static string GenerateToken(string signingKey, string Issuer, string Audience)
         {
             // authentication successful so generate jwt token
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -62,8 +62,8 @@ namespace MLWCore.Security
                     new Claim(ClaimTypes.Name, "DataManagerAccessToken")
                 }),
                 Expires = DateTime.UtcNow.AddDays(1),
-                Audience = "DataManagerAPI",
-                Issuer = "DataManagerAPI",
+                Audience = Audience,
+                Issuer = Issuer,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);

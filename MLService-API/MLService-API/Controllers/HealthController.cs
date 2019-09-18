@@ -8,7 +8,6 @@ namespace MLServiceAPI.Controllers
     {
         // GET api/health - returns health check in JSON format
         [HttpGet]
-        [Authorize]
         public IActionResult Get()
         {
             return new JsonResult(new { Healthy = true });
