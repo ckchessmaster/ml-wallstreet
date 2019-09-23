@@ -18,8 +18,6 @@ namespace MLWallstreetUI.Pages
     [Authorize(Policy = "UsersMustBeActive")]
     public class IndexModel : PageModel
     {
-        
-
         private readonly ApiService apiService;
 
         public IndexModel(ApiService apiService)
@@ -29,6 +27,8 @@ namespace MLWallstreetUI.Pages
 
         [BindProperty]
         public AdminDashboardModel AdminDashboardModel { get; set; }
+
+        private readonly string[] allowedFileTypes = { "text/csv", "application/vnd.ms-excel" };
 
         public IActionResult OnPostDataRetriever()
         {
@@ -48,6 +48,19 @@ namespace MLWallstreetUI.Pages
         public IActionResult OnPostDataCleaner()
         {
             CleanData();
+
+            return RedirectToPage("/Index");
+        }
+
+        public IActionResult OnPostSentimentTrainer()
+        {
+            var trainingData = AdminDashboardModel.SentimentAnalysisModelBinding.TrainingData;
+
+            // Make sure this is valid data
+            if (trainingData == null || !allowedFileTypes.Contains(trainingData.ContentType))
+            {
+                throw new Exception("Invalid Training Data!");
+            }
 
             return RedirectToPage("/Index");
         }

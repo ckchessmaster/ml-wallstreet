@@ -37,6 +37,7 @@ namespace MLServiceAPI
 
         private void ConfigureAuthentication(IServiceCollection services)
         {
+            // TODO: User Centralized Security
             // Configure jwt authentication
             services.AddAuthentication(x =>
             {
@@ -52,9 +53,9 @@ namespace MLServiceAPI
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetValue<string>("Security:SigningKey"))),
                     ValidateIssuer = true,
-                    ValidIssuer = "MLServiceAPI",
+                    ValidIssuer = "MLWallstreet",
                     ValidateAudience = true,
-                    ValidAudience = "MLServiceAPI"
+                    ValidAudience = "MLWallstreet"
                 };
             });
         }

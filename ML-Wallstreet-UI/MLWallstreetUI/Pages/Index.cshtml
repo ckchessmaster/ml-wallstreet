@@ -44,4 +44,14 @@
         <button type="submit" class="btn btn-primary" asp-page-handler="DataCleaner" onclick="return confirm('WARNING! This operation can take a very long time. Are you sure you want to continue?')">Clean</button>
     </form>
     <hr />
+    <h3>News Article Sentiment Analysis</h3>
+    <form id="sentimentTrainerForm" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <div class="col-md-10">
+                <p>Upload one or more files using this form:</p>
+                <input id="trainingDataFile" type="file" asp-for="AdminDashboardModel.SentimentAnalysisModelBinding.TrainingData" multiple>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" asp-page-handler="SentimentTrainer" value="Upload">Train</button>
+    </form>
 </div>

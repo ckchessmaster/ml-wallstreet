@@ -35,6 +35,7 @@ namespace MLWallstreetUI
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            // TODO: User centralized security
             // Security
             services.AddDefaultIdentity<MLWUser>()
                 .AddDefaultUI(UIFramework.Bootstrap4)

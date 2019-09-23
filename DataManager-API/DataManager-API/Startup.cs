@@ -39,6 +39,7 @@ namespace DataManagerAPI
             services.AddSingleton<DataManagementService, DataManagementService>();
             services.AddSingleton<SqlHelper, SqlHelper>();
 
+            // TODO: User Centralized Security
             // Configure jwt authentication
             services.AddAuthentication(x =>
             {
@@ -54,9 +55,9 @@ namespace DataManagerAPI
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetValue<string>("Security:SigningKey"))),
                     ValidateIssuer = true,
-                    ValidIssuer = "DataManagerAPI",
+                    ValidIssuer = "MLWallstreet",
                     ValidateAudience = true,
-                    ValidAudience = "DataManagerAPI"
+                    ValidAudience = "MLWallstreet"
                 };
             });
 

@@ -8,5 +8,7 @@ namespace MLWallstreetUI.Data.Models
     public class AdminDashboardModel
     {
         public DataRetrievalModel DataRetrievalModelBinding { get; set; }
+
+        public SentimentAnalysisModel SentimentAnalysisModelBinding { get; set; }
     }
 }
