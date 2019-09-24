@@ -55,6 +55,9 @@ namespace MLWSecurityService.Controllers
         [Route("validateToken")]
         public IActionResult ValidateToken([FromBody]string token)
         {
+            // Get rid of bearer if it is still there
+            token = token.Replace("Bearer ", "");
+
             var validationParams = new TokenValidationParameters
             {
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(config.GetValue<string>("Security:SigningKey"))),
@@ -74,7 +77,7 @@ namespace MLWSecurityService.Controllers
                 var user = handler.ValidateToken(token, validationParams, out SecurityToken validatedToken);
                 if (user != null)
                 {
-                    return new JsonResult(new { Result = true, User = user });
+                    return new JsonResult(new { Result = true });
                 }
 
             }
