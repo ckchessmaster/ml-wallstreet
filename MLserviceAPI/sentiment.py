@@ -46,8 +46,8 @@ def predict_single():
         return jsonify({"Message":"Missing required query parameter: InputText"}), 400
 
     result = predict([inputText])
-
-    return jsonify({ "Result": int(result[0][1]) })
+    
+    return jsonify({ "Result": result[0] })
 
 @sentiment_api.route('/predict', methods=['POST'])
 def predict_many():
