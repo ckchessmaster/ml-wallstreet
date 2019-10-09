@@ -10,18 +10,15 @@ from nltk.stem.porter import PorterStemmer
 
 import pickle
 import re
+import pandas
 
 sentiment_api = Blueprint('sentiment_api', __name__)
 
-@sentiment_api.route('/predict', methods=['GET'])
-def predict_single():
-    inputText = request.args.get('inputText')
-    
-    if inputText is None:
-        return jsonify({"Message":"Missing required query parameter: InputText"}), 400
+vectorizer = pickle.load(open('sentiment.vec', 'rb'))
+classifier = pickle.load(open('sentiment.mdl', 'rb'))
 
-    # Clean the input text
-    cleanText = re.sub('[^a-zA-Z]', ' ', inputText) # Replace all non letters with spaces
+def clean(text):
+    cleanText = re.sub('[^a-zA-Z]', ' ', text) # Replace all non letters with spaces
     cleanText = cleanText.lower() # Set the entire text to lower case
     cleanText = cleanText.split() # Split the text into it's individual words
 
@@ -31,14 +28,38 @@ def predict_single():
     cleanText = [ps.stem(word) for word in cleanText if not word in set(stopwords.words('english'))]
     cleanText = ' '.join(cleanText) # Put the string back together
 
-    # Predict
-    vectorizer = pickle.load(open('sentiment.vec', 'rb'))
-    textFinal = vectorizer.transform([cleanText]).toarray()
-    classifier = pickle.load(open('sentiment.mdl', 'rb'))
-    result = classifier.predict(textFinal).tolist()
-    finalResult = False
+    return cleanText
 
-    if result[0] == 1:
-        finalResult = True
+def predict(text):
+    cleanText = list(map(clean, text))
 
-    return jsonify({ "Result": finalResult })
+    vectorizedText = vectorizer.transform(cleanText).toarray()
+    predictions = list(map(int, classifier.predict(vectorizedText)))
+
+    return predictions
+
+@sentiment_api.route('/predict', methods=['GET'])
+def predict_single():
+    inputText = request.args.get('inputText')
+    
+    if inputText is None:
+        return jsonify({"Message":"Missing required query parameter: InputText"}), 400
+
+    result = predict([inputText])
+
+    return jsonify({ "Result": int(result[0][1]) })
+
+@sentiment_api.route('/predict', methods=['POST'])
+def predict_many():
+    json = request.get_json()
+
+    if json is None or 'InputText' not in json:
+        return jsonify({"Message":"Missing required array: InputText"}), 400
+    
+    inputText = json['InputText']
+
+    results = predict(inputText)
+
+    finalResults = list(map(lambda x: { "Text": x[0], "Prediction": x[1] }, zip(inputText, results)))
+
+    return jsonify({ "Results": finalResults })
