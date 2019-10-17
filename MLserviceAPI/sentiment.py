@@ -4,6 +4,8 @@ from flask import request
 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
 
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
@@ -63,3 +65,40 @@ def predict_many():
     finalResults = list(map(lambda x: { "Text": x[0], "Prediction": x[1] }, zip(inputText, results)))
 
     return jsonify({ "Results": finalResults })
+
+@sentiment_api.route('/train', methods=['POST'])
+def train():
+    json = request.get_json()
+
+    if json is None or 'TrainingData' not in json:
+        return jsonify({"Message":"Missing required array: InputText"}), 400
+
+    testSetSize = float(json['TestSetSize']) if 'TestSetSize' in json else 0.20
+
+    cleanText = []
+    results = []
+    for item in json['TrainingData']:
+        cleanText.append(clean(item['Text']))
+        results.append(item['Result'])
+
+    # Creating the Bag of Words model
+    vectorizer = CountVectorizer(max_features = 1500)
+    X = vectorizer.fit_transform(cleanText).toarray()
+    y = results
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = testSetSize)
+
+    # Fitting classifier to the Training set
+    classifier = GaussianNB()
+    classifier.fit(X_train, y_train)
+
+    # Predicting the Test set results so we can get the accuracy
+    accuracies = cross_val_score(estimator = classifier, X = X_train, y = y_train, cv = 10)
+    avgAccuracy = accuracies.mean()
+    accuracyStdDeviation = accuracies.std()    
+
+    # Save the classifier and vectorizer
+    pickle.dump(vectorizer, open('sentiment.vec', 'wb'))
+    pickle.dump(classifier, open('sentiment.mdl', 'wb'))
+
+    return jsonify({ "Accuracy": { "Average": avgAccuracy, "StandardDeviation": accuracyStdDeviation }})
