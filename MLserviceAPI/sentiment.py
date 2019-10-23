@@ -92,7 +92,7 @@ def train(data):
 
     print('Getting accuracy.')
     # Predicting the Test set results so we can get the accuracy
-    accuracies = cross_val_score(estimator = classifier, X = X_train, y = y_train, cv = 10)
+    accuracies = cross_val_score(estimator = classifier, X = X_train, y = y_train, cv = 10, pre_dispatch=8)
     avgAccuracy = accuracies.mean()
     accuracyStdDeviation = accuracies.std()    
 
