@@ -10,16 +10,24 @@ from sklearn.model_selection import cross_val_score
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
+from multiprocessing import Pool
+
 import pickle
 import re
 import pandas
+import threading
 
 sentiment_api = Blueprint('sentiment_api', __name__)
 
 vectorizer = pickle.load(open('sentiment.vec', 'rb'))
 classifier = pickle.load(open('sentiment.mdl', 'rb'))
 
-def clean(text):
+is_training = False
+
+def clean(data):
+    text = data['Text']
+    result = data['Result']
+
     cleanText = re.sub('[^a-zA-Z]', ' ', text) # Replace all non letters with spaces
     cleanText = cleanText.lower() # Set the entire text to lower case
     cleanText = cleanText.split() # Split the text into it's individual words
@@ -30,7 +38,7 @@ def clean(text):
     cleanText = [ps.stem(word) for word in cleanText if not word in set(stopwords.words('english'))]
     cleanText = ' '.join(cleanText) # Put the string back together
 
-    return cleanText
+    return (cleanText, result)
 
 def predict(text):
     cleanText = list(map(clean, text))
@@ -39,6 +47,58 @@ def predict(text):
     predictions = list(map(int, classifier.predict(vectorizedText)))
 
     return predictions
+
+def train(data):
+    print('Starting training...')
+    is_training = True
+
+    testSetSize = float(data['TestSetSize']) if 'TestSetSize' in data else 0.20
+
+    pool = Pool(processes=16)
+
+    print('Cleaning the data')
+    cleanData = pool.map(clean, data['TrainingData'])
+
+    finalData = []
+    results = []
+    for item in cleanData:
+        finalData.append(item[0])
+        results.append(item[1])
+
+    print('Vectorizing the data')
+    # Creating the Bag of Words model
+    vectorizer = CountVectorizer(max_features = 1500)
+    X = vectorizer.fit_transform(finalData).toarray()
+    y = results
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = testSetSize)
+    
+    # Freeing up some memory
+    X = None
+    y = None
+    X_test = None
+    y_test = None
+    cleanText = None
+    results = None
+
+    print('Fitting the model.')
+    # Fitting classifier to the Training set
+    classifier = GaussianNB()
+    classifier.fit(X_train, y_train)
+
+    print('Getting accuracy.')
+    # Predicting the Test set results so we can get the accuracy
+    accuracies = cross_val_score(estimator = classifier, X = X_train, y = y_train, cv = 10)
+    avgAccuracy = accuracies.mean()
+    accuracyStdDeviation = accuracies.std()    
+
+    print('Saving results.')
+    # Save the classifier and vectorizer
+    pickle.dump(vectorizer, open('sentiment.vec', 'wb'))
+    pickle.dump(classifier, open('sentiment.mdl', 'wb'))
+
+    print('Training complete!\nResults:\nAverage: ' + str(avgAccuracy) + '\nStandard Deviation: ' + str(accuracyStdDeviation))
+    is_training = False
 
 @sentiment_api.route('/predict', methods=['GET'])
 def predict_single():
@@ -67,38 +127,20 @@ def predict_many():
     return jsonify({ "Results": finalResults })
 
 @sentiment_api.route('/train', methods=['POST'])
-def train():
+def train_sentiment():
     json = request.get_json()
 
     if json is None or 'TrainingData' not in json:
         return jsonify({"Message":"Missing required array: InputText"}), 400
 
-    testSetSize = float(json['TestSetSize']) if 'TestSetSize' in json else 0.20
+    if is_training == True:
+        return jsonify({"Message":"Training already in progress."})
 
-    cleanText = []
-    results = []
-    for item in json['TrainingData']:
-        cleanText.append(clean(item['Text']))
-        results.append(item['Result'])
+    trainingThread = threading.Thread(target=train, args=(json,))
+    trainingThread.start()
 
-    # Creating the Bag of Words model
-    vectorizer = CountVectorizer(max_features = 1500)
-    X = vectorizer.fit_transform(cleanText).toarray()
-    y = results
+    return jsonify({ "Message": "Training Started." })
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = testSetSize)
-
-    # Fitting classifier to the Training set
-    classifier = GaussianNB()
-    classifier.fit(X_train, y_train)
-
-    # Predicting the Test set results so we can get the accuracy
-    accuracies = cross_val_score(estimator = classifier, X = X_train, y = y_train, cv = 10)
-    avgAccuracy = accuracies.mean()
-    accuracyStdDeviation = accuracies.std()    
-
-    # Save the classifier and vectorizer
-    pickle.dump(vectorizer, open('sentiment.vec', 'wb'))
-    pickle.dump(classifier, open('sentiment.mdl', 'wb'))
-
-    return jsonify({ "Accuracy": { "Average": avgAccuracy, "StandardDeviation": accuracyStdDeviation }})
+@sentiment_api.route('/isTraining', methods=['GET'])
+def is_sentiment_training():
+    return jsonify(is_training)

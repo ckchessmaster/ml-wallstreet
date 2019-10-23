@@ -13,7 +13,6 @@ using MLWallstreetUI.Data.Enums;
 using MLWallstreetUI.Data.Models;
 using MLWallstreetUI.Services;
 using Newtonsoft.Json;
-using static MLWallstreetUI.Data.Models.AdminDashboardModel;
 
 namespace MLWallstreetUI.Pages
 {
@@ -28,7 +27,14 @@ namespace MLWallstreetUI.Pages
             public string Text { get; set; }
         }
 
-        private readonly ApiService apiService;
+        private class Accuracy
+        {
+            public decimal Average { get; set; }
+
+            public decimal StandardDeviation { get; set; }
+        }
+
+        private readonly ApiService apiService; 
 
         public IndexModel(ApiService apiService)
         {
@@ -57,9 +63,16 @@ namespace MLWallstreetUI.Pages
 
         public IActionResult OnPostDataCleaner()
         {
-            CleanData();
+            _ = CleanData();
 
             return RedirectToPage("/Index");
+        }
+
+        private async Task CleanData()
+        {
+            var dataManager = await apiService.GetApi(ServiceApiType.DataManagerApi);
+
+            await dataManager.Client.PostAsync(dataManager.BaseUrl + "news/clean", new StringContent("{}", Encoding.UTF8, "application/json"));
         }
 
         public IActionResult OnPostSentimentTrainer()
@@ -89,15 +102,35 @@ namespace MLWallstreetUI.Pages
                     data = csvr.GetRecords<SentitmentTrainingDataModel>().ToList();
                 }
             }
-            
+
+            _ = TrainSentimentModel(data);
+
             return RedirectToPage("/Index");
         }
 
-        private async Task CleanData()
+        private async Task TrainSentimentModel(List<SentitmentTrainingDataModel> data)
         {
-            var dataManager = await apiService.GetApi(ServiceApiType.DataManagerApi);
+            var mlService = await apiService.GetApi(ServiceApiType.MLServiceApi);
+           
+            string jsonString = JsonConvert.SerializeObject(new
+            {
+                TestSetSize = 0.25m,
+                TrainingData = data
+            });
 
-            await dataManager.Client.PostAsync(dataManager.BaseUrl + "news/clean", new StringContent("{}", Encoding.UTF8, "application/json"));
+            // Check if training is already in progress
+            var result = await mlService.Client.GetAsync(mlService.BaseUrl + "sentiment/isTraining");
+
+            result.EnsureSuccessStatusCode();
+
+            string resultString = await result.Content.ReadAsStringAsync();
+            bool isTrainingProgress = JsonConvert.DeserializeObject<bool>(resultString);
+
+            if (!isTrainingProgress)
+            {
+                result = await mlService.Client.PostAsync(mlService.BaseUrl + "sentiment/train", new StringContent(jsonString, Encoding.UTF8, "application/json"));
+                result.EnsureSuccessStatusCode();
+            }
         }
     }
 }

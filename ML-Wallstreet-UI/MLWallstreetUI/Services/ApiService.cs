@@ -18,7 +18,7 @@ namespace MLWallstreetUI.Services
             serviceApis = new Dictionary<ServiceApiType, ServiceApi>
             {
                 { ServiceApiType.DataManagerApi, new ServiceApi(configuration, configuration.GetValue<string>("DataManagerApi:Url")) },
-                { ServiceApiType.MLServiceApi, new ServiceApi(configuration, "") }
+                { ServiceApiType.MLServiceApi, new ServiceApi(configuration, configuration.GetValue<string>("MLServiceAPI:Url")) }
             };
         }
 

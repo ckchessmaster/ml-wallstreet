@@ -42,8 +42,8 @@ namespace MLWallstreetUI.Data.Models
         public async Task Authenticate()
         {
             // Get the new token
-            Client.DefaultRequestHeaders.Add("Api-Key", configuration.GetValue<string>("DataManagerApi:ApiKey"));
-            var result = await Client.GetAsync(BaseUrl + "auth/gettoken");
+            Client.DefaultRequestHeaders.Add("Api-Key", configuration.GetValue<string>("SecurityServiceAPI:ApiKey"));
+            var result = await Client.GetAsync(configuration.GetValue<string>("SecurityServiceAPI:Url") + "auth/gettoken");
 
             result.EnsureSuccessStatusCode();
 

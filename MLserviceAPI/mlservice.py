@@ -7,6 +7,7 @@ from sentiment import sentiment_api
 import authmiddleware as middleware
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 # 100MB
 
 app.wsgi_app = middleware.AuthMiddleware(app.wsgi_app)
 
