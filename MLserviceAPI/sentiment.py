@@ -16,6 +16,7 @@ import pickle
 import re
 import pandas
 import threading
+import gc
 
 sentiment_api = Blueprint('sentiment_api', __name__)
 
@@ -78,8 +79,11 @@ def train(data):
     y = None
     X_test = None
     y_test = None
-    cleanText = None
+    finalData = None
     results = None
+    pool = None
+
+    gc.collect()
 
     print('Fitting the model.')
     # Fitting classifier to the Training set
