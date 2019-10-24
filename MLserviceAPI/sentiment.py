@@ -3,6 +3,8 @@ from flask import jsonify
 from flask import request
 
 from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
@@ -53,18 +55,26 @@ def train(data):
     print('Starting training...')
     is_training = True
 
-    testSetSize = float(data['TestSetSize']) if 'TestSetSize' in data else 0.20
-
-    pool = Pool(processes=16)
-
-    print('Cleaning the data')
-    cleanData = pool.map(clean, data['TrainingData'])
+    testSetSize = float(data['TestSetSize']) if data != None and 'TestSetSize' in data else 0.20
 
     finalData = []
     results = []
-    for item in cleanData:
-        finalData.append(item[0])
-        results.append(item[1])
+
+    if data != None:
+        print('Cleaning the data')
+        pool = Pool(processes=16)
+        cleanData = pool.map(clean, data['TrainingData'])
+
+        for item in cleanData:
+            finalData.append(item[0])
+            results.append(item[1])
+
+        pickle.dump((finalData, results), open('CleanedSentimentData.dat', 'wb'))
+    else:
+        print('Loading cleaned data')
+        cleanedData = pickle.load(open('CleanedSentimentData.dat', 'rb'))
+        finalData = cleanedData[0]
+        results = cleanedData[1]
 
     print('Vectorizing the data')
     # Creating the Bag of Words model
@@ -88,19 +98,33 @@ def train(data):
     print('Fitting the model.')
     # Fitting classifier to the Training set
     classifier = GaussianNB()
+    # classifier = SVC(kernel = 'rbf', gamma=0.2, C=10)
     classifier.fit(X_train, y_train)
 
-    print('Getting accuracy.')
+    # Use the following section when choosing between classifiers and their parameters
+    # parameters = [{'C': [1, 10, 100, 1000], 'kernel': ['linear']},
+    #             {'C': [1, 10, 100, 1000], 'kernel': ['rbf'], 'gamma': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}]
+    # grid_search = GridSearchCV(estimator = classifier,
+    #                         param_grid = parameters,
+    #                         scoring = 'accuracy',
+    #                         cv = 10,
+    #                         pre_dispatch=8)
+    # grid_search = grid_search.fit(X_train, y_train)
+    # best_accuracy = grid_search.best_score_
+    # best_parameters = grid_search.best_params_
+
     # Predicting the Test set results so we can get the accuracy
+    print('Getting accuracy.')
     accuracies = cross_val_score(estimator = classifier, X = X_train, y = y_train, cv = 10, pre_dispatch=8)
-    avgAccuracy = accuracies.mean()
-    accuracyStdDeviation = accuracies.std()    
+    avgAccuracy = accuracies.mean() * 100
+    accuracyStdDeviation = accuracies.std() * 100
 
     print('Saving results.')
     # Save the classifier and vectorizer
     pickle.dump(vectorizer, open('sentiment.vec', 'wb'))
     pickle.dump(classifier, open('sentiment.mdl', 'wb'))
 
+    # print('Training complete!\nResults:\nAverage: ' + str(best_accuracy) + '\nSVM Params: ' + str(best_parameters))
     print('Training complete!\nResults:\nAverage: ' + str(avgAccuracy) + '\nStandard Deviation: ' + str(accuracyStdDeviation))
     is_training = False
 
@@ -135,7 +159,12 @@ def train_sentiment():
     json = request.get_json()
 
     if json is None or 'TrainingData' not in json:
-        return jsonify({"Message":"Missing required array: InputText"}), 400
+        trainingThread = threading.Thread(target=train, args=(None,))
+        trainingThread.start()
+
+        return jsonify({"Message":"Training started with pre-cleaned data..."})
+        #return jsonify({"Message":"Missing required array: InputText"}), 400
+
 
     if is_training == True:
         return jsonify({"Message":"Training already in progress."})
@@ -145,6 +174,7 @@ def train_sentiment():
 
     return jsonify({ "Message": "Training Started." })
 
+# TODO: This route is broken!
 @sentiment_api.route('/isTraining', methods=['GET'])
 def is_sentiment_training():
     return jsonify(is_training)
