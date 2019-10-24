@@ -6,6 +6,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import HashingVectorizer
+from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 
@@ -79,8 +81,15 @@ def train(data):
     print('Vectorizing the data')
     # Creating the Bag of Words model
     vectorizer = CountVectorizer(max_features = 1500)
+    # vectorizer = HashingVectorizer(n_features=50)
     X = vectorizer.fit_transform(finalData).toarray()
     y = results
+
+    # Lets see if PCA can help reduce things for us
+    # print('Attempting to reduce features')
+    # pca = PCA(n_components = 200)
+    # X = pca.fit_transform(X)
+    # print('Explained varience' + str(pca.explained_variance_))
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = testSetSize)
     

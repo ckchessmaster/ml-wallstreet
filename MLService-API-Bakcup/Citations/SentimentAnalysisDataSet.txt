@@ -1,1 +1,0 @@
-'From Group to Individual Labels using Deep Features', Kotzias et. al,. KDD 2015
