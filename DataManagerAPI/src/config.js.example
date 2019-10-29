@@ -1,0 +1,3 @@
+module.exports = {
+    port: process.env.DATA_MANAGER_PORT || 3000
+}

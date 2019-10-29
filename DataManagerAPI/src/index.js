@@ -1,8 +1,8 @@
+const config = require('./config')
 const express = require('express')
 const app = express()
-const port = 3000
 
 var routes = require('./routes')
 app.use('/', routes)
 
-app.listen(port, () => console.log(`DataManager is listening on port ${port}!`))
+app.listen(config.port, () => console.log(`DataManager is listening on port ${config.port}!`))
