@@ -28,9 +28,4 @@
     <Compile Remove="Controllers\ValuesController.cs" />
     <Compile Remove="Controllers\ValuesController.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="MLWCore">
-      <HintPath>lib\MLWCore.dll</HintPath>
-    </Reference>
-  </ItemGroup>
 </Project>

@@ -1,14 +1,15 @@
 ﻿using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.IdentityModel.Tokens;
+using MLWSecurityService.Data;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace MLWCore.Security
+namespace MLWSecurityService.Services
 {
-    public static class SecurityHelper
+    public class SecurityService
     {
         /// <summary>
         /// Hash the given password using an optional salt. (If no salt is provided one will be generated)
@@ -59,9 +60,9 @@ namespace MLWCore.Security
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.Name, "DataManagerAccessToken")
+                        new Claim(ClaimTypes.Name, "DataManagerAccessToken")
                 }),
-                Expires = DateTime.UtcNow.AddDays(1),
+                Expires = DateTime.UtcNow.AddMinutes(15),
                 Audience = Audience,
                 Issuer = Issuer,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)

@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using MLWCore.Security;
+using MLWSecurityService.Data;
+using MLWSecurityService.Services;
 
 namespace MLWSecurityService.Controllers
 {
@@ -32,17 +30,17 @@ namespace MLWSecurityService.Controllers
             }
 
             // Hash the apiKey
-            var dataManagerApiKey = new Password
+            var key = new Password
             {
                 Hash = config.GetValue<string>("Security:ApiKey:Hash"),
                 Salt = config.GetValue<string>("Security:ApiKey:Salt")
             };
 
-            Password hashedKey = SecurityHelper.HashPassword(apiKey, dataManagerApiKey.Salt);
+            Password hashedKey = SecurityService.HashPassword(apiKey, key.Salt);
 
-            if (hashedKey.Equals(dataManagerApiKey))
+            if (hashedKey.Equals(key))
             {
-                return new JsonResult(new { Token = SecurityHelper.GenerateToken(
+                return new JsonResult(new { Token = SecurityService.GenerateToken(
                     config.GetValue<string>("Security:SigningKey"), 
                     config.GetValue<string>("Security:Issuer"), 
                     config.GetValue<string>("Security:Audience")) });
@@ -51,12 +49,17 @@ namespace MLWSecurityService.Controllers
             return new UnauthorizedResult();
         }
 
+        public class ValidateTokenRequest
+        {
+            public string Token { get; set; }
+        }
+
         [HttpPost]
         [Route("validateToken")]
-        public IActionResult ValidateToken([FromBody]string token)
+        public IActionResult ValidateToken([FromBody]ValidateTokenRequest request)
         {
             // Get rid of bearer if it is still there
-            token = token.Replace("Bearer ", "");
+            string token = request.Token.Replace("Bearer ", "");
 
             var validationParams = new TokenValidationParameters
             {
@@ -83,7 +86,7 @@ namespace MLWSecurityService.Controllers
             }
             catch (SecurityTokenValidationException)
             {
-                return new UnauthorizedResult();
+                return new JsonResult(new { Result = false });
             }
             catch (ArgumentException)
             {
