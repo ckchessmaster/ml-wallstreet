@@ -23,9 +23,8 @@ import threading
 import gc
 
 sentiment_api = Blueprint('sentiment_api', __name__)
-
-vectorizer = pickle.load(open('sentiment.vec', 'rb'))
-classifier = pickle.load(open('sentiment.mdl', 'rb'))
+vectorizer = pickle.load(open('models/sentiment.vec', 'rb'))
+classifier = pickle.load(open('models/sentiment.mdl', 'rb'))
 
 is_training = False
 

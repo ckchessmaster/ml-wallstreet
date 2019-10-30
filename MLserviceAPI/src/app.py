@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from flask import Flask
-from health import health_api
-from sentiment import sentiment_api
+# Set the working directory before we do anything else
+import os
+os.chdir(os.path.dirname(__file__) + '/..')
 
-import authmiddleware as middleware
+from flask import Flask
+from routes.health import health_api
+from routes.sentiment import sentiment_api
+
+import middleware.authmiddleware as middleware
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 # 100MB
