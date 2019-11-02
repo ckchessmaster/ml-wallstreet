@@ -3,12 +3,21 @@ import config
 import json
 import http.client
 import ssl
+import services.logger as logger
+import sys
 
 # TODO: We need to make the bad requests actually return a body. WSGI is a pain...
 class AuthMiddleware(object):
     def __init__(self, app):
         self.app = app
         
+    def getInvalidLoginAttemptMessage(self, environ):
+        request_method = environ['REQUEST_METHOD']
+        request_uri = environ['REQUEST_URI']
+        remote_addr = environ['REMOTE_ADDR']
+
+        return (f'Invalid login attempt! REQUEST_METHOD: {request_method}, REQUEST_URI: {request_uri}, REMOTE_ADDR: {remote_addr}')
+
     def __call__(self, environ, start_response):
         # The health route is the only route which does not need authentication
         if environ['PATH_INFO'].startswith('/api/health'):
@@ -19,6 +28,7 @@ class AuthMiddleware(object):
         
         # If there was no token at all then this is a bad request
         if not 'HTTP_AUTHORIZATION' in environ:
+            logger.log_event(self.getInvalidLoginAttemptMessage(environ))
             body = json.dumps({"message":"Bad Request. No token provided."})
             
             response = self.app.make_response(body)
@@ -41,8 +51,7 @@ class AuthMiddleware(object):
             result = json.loads(response.read().decode())
             con.close()
         except Exception as e:
-            # TODO: Add proper logging
-            print(e)
+            logger.log_error('Error while trying to validate token: ' + str(e.args))
 
             body = json.dumps({"message":"Something went wrong. Please try again later."})
             
@@ -53,6 +62,7 @@ class AuthMiddleware(object):
             return response(environ, start_response)
         
         if (response.status != 200 or result['result'] == False):
+            logger.log_event(self.getInvalidLoginAttemptMessage(environ))
             body = json.dumps({"message":"Access denied. Invalid token."})
             
             response = self.app.make_response(body)

@@ -5,6 +5,7 @@ import os
 os.chdir(os.path.dirname(__file__) + '/..')
 
 # Imports
+import services.logger as logger
 from flask import Flask
 from routes.health import health_api
 from routes.sentiment import sentiment_api
