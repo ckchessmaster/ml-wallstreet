@@ -16,7 +16,7 @@ import middleware.authmiddleware as middleware
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 # 100MB
 
-app.wsgi_app = middleware.AuthMiddleware(app)
+app.wsgi_app = middleware.AuthMiddleware(app, app.wsgi_app)
 
 app.register_blueprint(health_api, url_prefix='/api/health')
 app.register_blueprint(sentiment_api, url_prefix='/api/sentiment')

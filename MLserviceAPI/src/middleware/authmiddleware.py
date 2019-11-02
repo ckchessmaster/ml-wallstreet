@@ -8,7 +8,8 @@ import sys
 
 # TODO: We need to make the bad requests actually return a body. WSGI is a pain...
 class AuthMiddleware(object):
-    def __init__(self, app):
+    def __init__(self, flask, app):
+        self.flask = flask
         self.app = app
         
     def getInvalidLoginAttemptMessage(self, environ):
@@ -21,7 +22,7 @@ class AuthMiddleware(object):
     def __call__(self, environ, start_response):
         # The health route is the only route which does not need authentication
         if environ['PATH_INFO'].startswith('/api/health'):
-            return self.app(environ, start_response)
+            return self.flask(environ, start_response)
         
         # TODO: mabye make this configurable? Or just rely on the requested content type.
         content_type = 'application/json'
@@ -31,7 +32,7 @@ class AuthMiddleware(object):
             logger.log_event(self.getInvalidLoginAttemptMessage(environ))
             body = json.dumps({"message":"Bad Request. No token provided."})
             
-            response = self.app.make_response(body)
+            response = self.flask.make_response(body)
             response.content_type = content_type
             response.status_code = 400
             
@@ -55,7 +56,7 @@ class AuthMiddleware(object):
 
             body = json.dumps({"message":"Something went wrong. Please try again later."})
             
-            response = self.app.make_response(body)
+            response = self.flask.make_response(body)
             response.content_type = content_type
             response.status_code = 500
 
@@ -65,7 +66,7 @@ class AuthMiddleware(object):
             logger.log_event(self.getInvalidLoginAttemptMessage(environ))
             body = json.dumps({"message":"Access denied. Invalid token."})
             
-            response = self.app.make_response(body)
+            response = self.flask.make_response(body)
             response.content_type = content_type
             response.status_code = 401
 
