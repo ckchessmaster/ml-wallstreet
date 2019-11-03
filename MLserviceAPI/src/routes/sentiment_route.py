@@ -1,7 +1,10 @@
 import config
 import services.logger as logger
+
 import services.sentiment_service as sentiment_service
 from services.sentiment_service import ClassifierNotReadyError
+from services.sentiment_service import CleaningInProgressError
+from services.sentiment_service import TrainingInProgressError
 
 from flask import Blueprint
 from flask import jsonify
@@ -17,14 +20,18 @@ def predict_single():
         return jsonify({"message":"Missing required query parameter: InputText"}), 400
 
     try:
-        result = sentiment_service.try_predict(input_text)
+        result = sentiment_service.predict([input_text])
     except ClassifierNotReadyError as e:
+        logger.log_error('Error trying to predict sentiment. ' + str(e.message))
+        return jsonify({"message":e.client_message}), 500
+    except CleaningInProgressError as e:
+        logger.log_error('Error trying to predict sentiment. ' + str(e.message))
         return jsonify({"message":e.client_message}), 500
     except Exception as e:
-        logger.log_error('Error trying to predict sentiment. ' + str(e.message))
+        logger.log_error('Error trying to predict sentiment. ' + str(e.args))
         return jsonify({"message":config.INTERNAL_ERROR_MESSAGE}), 500
 
-    return jsonify({ "Result": result[0] })
+    return jsonify({ "Result": str(result[0]) })
 
 # @sentiment_api.route('/predict', methods=['POST'])
 # def predict_many():

@@ -1,3 +1,4 @@
+# Imports
 import services.logger as logger
 import pickle
 import re
@@ -12,25 +13,28 @@ from nltk.corpus import stopwords
 
 from multiprocessing import Pool
 
+# Custom exceptions
 class CleaningInProgressError(Exception):
     def __init__(self, message=''):
-        self.message = message + 'Cleaning already in progress. Please try again later.'
-        self.client_message = 'Cleaning already in progress. Please try again later.'
+        self.message = message + 'Cleaning already in progress.'
+        self.client_message = 'System is currently busy. Please try again later.'
 
 class TrainingInProgressError(Exception):
     def __init__(self, message=''):
-        self.message = message + 'Training already in progress. Please try again later.'
-        self.client_message = 'Training already in progress. Please try again later.'
+        self.message = message + 'Training already in progress.'
+        self.client_message = 'System is currently busy. Please try again later.'
 
 class ClassifierNotReadyError(Exception):
     def __init__(self, message=''):
-        self.message = message + 'Classifier not ready. Please train your model first.'
+        self.message = message + 'Classifier not ready.'
         self.client_message = 'Classifier not ready. Please train your model first.'
 
+# Globals
 classifier_ready = True
 is_training = False
 is_cleaning = False
 
+# Try to load the vectorizer & classfier
 try:
     vectorizer = vectorizer = pickle.load(open('models/sentiment.vec', 'rb'))
 except Exception as e:
@@ -42,6 +46,8 @@ try:
 except Exception as e:
     logger.log_error('Error loading classifier! ' + str(e.args))
     classifier_ready = False
+
+# Begin sentiment functions --------------------------------------------------------------------------------------------------
 
 def clean_single(text):
     clean_text = re.sub('[^a-zA-Z]', ' ', text) # Replace all non letters with spaces
@@ -56,37 +62,39 @@ def clean_single(text):
 
     return clean_text
 
-def try_clean_dataset(dataset):
+def clean(text):
     global is_cleaning
 
     if is_cleaning == True:
         raise CleaningInProgressError()
 
-    logger.log('Cleaning dataset.')
-    is_cleaning = True
+    if len(text) > config.SENTIMENT_SINGLE_THREAD_CUTOFF:
+        logger.log('Cleaning text.')
+        is_cleaning = True
 
-    pool = Pool(processes=8)
-    dataset.X = pool.map(clean_single, dataset.X)
-    
-    is_cleaning = False
-    logger.log('Cleaning complete.')
+        pool = Pool(processes=8)
+        clean_text = pool.map(clean_single, text)
+        
+        is_cleaning = False
+        logger.log('Cleaning complete.')
+    else:
+        clean_text = map(clean_single, text)
 
-    return dataset
+    return clean_text
 
-def try_predict(text):
+def predict(text):
     global classifier_ready
 
     if not classifier_ready:
-        # TODO: We should add a custom exception
         raise ClassifierNotReadyError()
 
-    clean_text = clean_single(text)
-    vectorized_text = vectorizer.transform([clean_text]).toarray()
-    prediction = classifier.predict(vectorized_text)
+    clean_text = clean(text)
+    vectorized_text = vectorizer.transform(clean_text).toarray()
+    predictions = classifier.predict(vectorized_text)
 
-    return str(prediction[0])
+    return predictions
 
-def try_train(dataset):
+def train(dataset):
     global is_training
     global vectorizer
     global classifier
