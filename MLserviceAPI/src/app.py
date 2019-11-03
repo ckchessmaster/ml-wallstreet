@@ -7,10 +7,10 @@ os.chdir(os.path.dirname(__file__) + '/..')
 # Imports
 import services.logger as logger
 from flask import Flask
-from routes.health import health_api
-from routes.sentiment import sentiment_api
+from routes.health_route import health_api
+from routes.sentiment_route import sentiment_api
 
-import middleware.authmiddleware as middleware
+import middleware.auth_middleware as middleware
 
 # Configure the API
 app = Flask(__name__)

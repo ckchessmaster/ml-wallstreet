@@ -6,7 +6,6 @@ import ssl
 import services.logger as logger
 import sys
 
-# TODO: We need to make the bad requests actually return a body. WSGI is a pain...
 class AuthMiddleware(object):
     def __init__(self, flask, app):
         self.flask = flask

@@ -12,6 +12,21 @@ from nltk.corpus import stopwords
 
 from multiprocessing import Pool
 
+class CleaningInProgressError(Exception):
+    def __init__(self, message=''):
+        self.message = message + 'Cleaning already in progress. Please try again later.'
+        self.client_message = 'Cleaning already in progress. Please try again later.'
+
+class TrainingInProgressError(Exception):
+    def __init__(self, message=''):
+        self.message = message + 'Training already in progress. Please try again later.'
+        self.client_message = 'Training already in progress. Please try again later.'
+
+class ClassifierNotReadyError(Exception):
+    def __init__(self, message=''):
+        self.message = message + 'Classifier not ready. Please train your model first.'
+        self.client_message = 'Classifier not ready. Please train your model first.'
+
 classifier_ready = True
 is_training = False
 is_cleaning = False
@@ -45,7 +60,7 @@ def try_clean_dataset(dataset):
     global is_cleaning
 
     if is_cleaning == True:
-        raise Exception('Cleaning already in progress. Please try again later.')
+        raise CleaningInProgressError()
 
     logger.log('Cleaning dataset.')
     is_cleaning = True
@@ -63,7 +78,7 @@ def try_predict(text):
 
     if not classifier_ready:
         # TODO: We should add a custom exception
-        raise Exception('Classifier not ready. Please train first.')
+        raise ClassifierNotReadyError()
 
     clean_text = clean_single(text)
     vectorized_text = vectorizer.transform([clean_text]).toarray()
@@ -77,7 +92,7 @@ def try_train(dataset):
     global classifier
 
     if is_training == True:
-        raise Exception('Training already in progress. Please try again later.')
+        raise TrainingInProgressError()
 
     logger.log('Starting training...')
     is_training = True

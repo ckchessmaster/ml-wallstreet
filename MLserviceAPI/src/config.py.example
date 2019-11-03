@@ -12,6 +12,7 @@
 ENVIRONMNET = 'DEV'
 
 MLWSECURITYSERVICE_URL = 'localhost:44373'
+INTERNAL_ERROR_MESSAGE = 'Something went wrong. Please try again later.'
 
 # Sentiment config
 BAG_OF_WORDS_SIZE = 1500
