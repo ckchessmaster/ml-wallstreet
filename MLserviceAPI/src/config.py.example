@@ -1,0 +1,15 @@
+# -*- coding: utf-8 -*-
+
+# General config
+
+# The environment we are in. 
+# Valid options:
+# PROD - Production level
+# DEV - Development level (no security enforced)
+# DEV_SECURITY - Development level with security
+ENVIRONMNET = 'DEV'
+
+MLWSECURITYSERVICE_URL = 'localhost:44373'
+
+# Sentiment config
+BAG_OF_WORDS_SIZE = 1500
