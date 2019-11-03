@@ -66,10 +66,10 @@ def try_predict(text):
         raise Exception('Classifier not ready. Please train first.')
 
     clean_text = clean_single(text)
-    vectorized_text = vectorizer.transform(clean_text).toarray()
+    vectorized_text = vectorizer.transform([clean_text]).toarray()
     prediction = classifier.predict(vectorized_text)
 
-    return prediction
+    return str(prediction[0])
 
 def try_train(dataset):
     global is_training

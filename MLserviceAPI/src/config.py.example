@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# TODO: We may want a better way of handling config
+
 # General config
 
 # The environment we are in. 
