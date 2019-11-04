@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MLWSecurityService.Data;
 using System;
@@ -11,13 +12,24 @@ namespace MLWSecurityService.Services
 {
     public class SecurityService
     {
+        private readonly string signingKey;
+        private readonly string issuer;
+        private readonly string audience;
+
+        public SecurityService(IConfiguration config)
+        {
+            signingKey = config.GetValue<string>("Security:SigningKey");
+            issuer = config.GetValue<string>("Security:Issuer");
+            audience = config.GetValue<string>("Security:Audience");
+        }
+
         /// <summary>
         /// Hash the given password using an optional salt. (If no salt is provided one will be generated)
         /// </summary>
         /// <param name="password">The password to hash.</param>
         /// <param name="salt">The salt to use.</param>
         /// <returns>A Password object containing the hashed password and it's salt.</returns>
-        public static Password HashPassword(string password, string salt = null)
+        public Password HashPassword(string password, string salt = null)
         {
             // generate a 128-bit salt using a secure PRNG
             byte[] saltBytes;
@@ -51,7 +63,7 @@ namespace MLWSecurityService.Services
             };
         }
 
-        public static string GenerateToken(string signingKey, string Issuer, string Audience)
+        public string GenerateToken()
         {
             // authentication successful so generate jwt token
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -63,8 +75,8 @@ namespace MLWSecurityService.Services
                         new Claim(ClaimTypes.Name, "DataManagerAccessToken")
                 }),
                 Expires = DateTime.UtcNow.AddMinutes(15),
-                Audience = Audience,
-                Issuer = Issuer,
+                Audience = audience,
+                Issuer = issuer,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);

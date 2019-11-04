@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -14,10 +15,49 @@ namespace MLWSecurityService.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IConfiguration config;
+        private readonly UserService userService;
+        private readonly SecurityService securityService;
 
-        public AuthController(IConfiguration config)
+        public AuthController(IConfiguration config, UserService userService, SecurityService securityService)
         {
             this.config = config;
+            this.userService = userService;
+            this.securityService = securityService;
+        }
+
+        public class LoginRequest
+        {
+            public string Username { get; set; }
+
+            public string Password { get; set; }
+        }
+
+        [HttpPost]
+        [Route("login")]
+        public async Task<IActionResult> Login([FromBody]LoginRequest request)
+        {
+            var user = await userService.Get(request.Username);
+
+            if (user == null)
+            {
+                return new JsonResult(new { Message = "Invalid username or password." }) { StatusCode = 401 };
+            }
+
+            if (!user.IsActive)
+            {
+                return new JsonResult(new { Message = "User is not active." }) { StatusCode = 401 };
+            }
+
+            Password hashedPassword = securityService.HashPassword(request.Password, user.Password.Salt);
+
+            if (hashedPassword.Equals(user.Password))
+            {
+                return new JsonResult(new { Token = securityService.GenerateToken() });   
+            }
+            else
+            {
+                return new JsonResult(new { Message = "Invalid username or password." }) { StatusCode = 401 };
+            }
         }
 
         [HttpGet]
@@ -26,7 +66,7 @@ namespace MLWSecurityService.Controllers
         {
             if (string.IsNullOrEmpty(apiKey))
             {
-                return new BadRequestResult();
+                return new JsonResult(new { Message = "Invalid or missing api-key." }) { StatusCode = 400 };
             }
 
             // Hash the apiKey
@@ -36,17 +76,14 @@ namespace MLWSecurityService.Controllers
                 Salt = config.GetValue<string>("Security:ApiKey:Salt")
             };
 
-            Password hashedKey = SecurityService.HashPassword(apiKey, key.Salt);
+            Password hashedKey = securityService.HashPassword(apiKey, key.Salt);
 
             if (hashedKey.Equals(key))
             {
-                return new JsonResult(new { Token = SecurityService.GenerateToken(
-                    config.GetValue<string>("Security:SigningKey"), 
-                    config.GetValue<string>("Security:Issuer"), 
-                    config.GetValue<string>("Security:Audience")) });
+                return new JsonResult(new { Token = securityService.GenerateToken() });
             }
 
-            return new UnauthorizedResult();
+            return new JsonResult(new { Message = "Invalid or missing api-key." });
         }
 
         public class ValidateTokenRequest

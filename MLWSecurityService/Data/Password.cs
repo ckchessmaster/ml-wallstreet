@@ -27,5 +27,10 @@ namespace MLWSecurityService.Data
 
             return false;
         }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Hash, Salt);
+        }
     }
 }
