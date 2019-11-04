@@ -33,7 +33,11 @@ namespace MLWSecurityService
             {
                 options.AddPolicy(CORSPolicy, builder =>
                 {
-                    builder.WithOrigins(Configuration.GetSection("Security:AllowedOrigins").Get<List<string>>().ToArray());
+                    builder
+                        .WithOrigins(Configuration.GetSection("Security:AllowedOrigins").Get<List<string>>().ToArray())
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials();
                 });
             });
 
