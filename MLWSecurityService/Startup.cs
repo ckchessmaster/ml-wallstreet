@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using MLWSecurityService.Services;
+using System;
+using System.Text;
 
 namespace MLWSecurityService
 {
@@ -29,6 +26,22 @@ namespace MLWSecurityService
             services.AddSingleton<SecurityService>();
             services.AddSingleton<UserService>();
 
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ClockSkew = TimeSpan.FromMinutes(5),
+                    RequireSignedTokens = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetValue<string>("Security:SigningKey"))),
+                    RequireExpirationTime = true,
+                    ValidateLifetime = true,
+                    ValidateAudience = true,
+                    ValidAudience = Configuration.GetValue<string>("Security:Audience"),
+                    ValidateIssuer = true,
+                    ValidIssuer = Configuration.GetValue<string>("Security:Issuer")
+                };
+            });
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
 
@@ -46,6 +59,7 @@ namespace MLWSecurityService
             }
 
             app.UseHttpsRedirection();
+            app.UseAuthentication();
             app.UseMvc();
         }
     }

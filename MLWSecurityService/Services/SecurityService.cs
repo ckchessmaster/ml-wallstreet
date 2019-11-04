@@ -72,7 +72,7 @@ namespace MLWSecurityService.Services
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                        new Claim(ClaimTypes.Name, "DataManagerAccessToken")
+                        new Claim(ClaimTypes.Name, "MLWAccessToken")
                 }),
                 Expires = DateTime.UtcNow.AddMinutes(15),
                 Audience = audience,
