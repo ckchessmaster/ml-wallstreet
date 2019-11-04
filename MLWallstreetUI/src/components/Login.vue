@@ -8,13 +8,13 @@
                     </v-toolbar>
                     <v-card-text>
                         <v-form>
-                            <v-text-field label="Login" name="login" prepend-icon="person" type="text" />
-                            <v-text-field id="password" label="Password" name="password" prepend-icon="lock" type="password" />
+                            <v-text-field label="Login" name="login" prepend-icon="person" type="text" v-model="input.username" />
+                            <v-text-field id="password" label="Password" name="password" prepend-icon="lock" type="password" v-model="input.password" />
                         </v-form>
                     </v-card-text>
                     <v-card-actions>
                         <v-spacer />
-                        <v-btn color="primary">Login</v-btn>
+                        <v-btn color="primary" v-on:click="login()">Login</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-col>
@@ -23,7 +23,28 @@
 </template>
 
 <script>
+import loginService from '../services/login-service'
+
 export default {
-  name: 'Login'
+  name: 'Login',
+  data() {
+      return {
+          input: {
+              username: "",
+              password: ""
+          }
+      }
+  },
+  methods: {
+      async login() {
+          if (this.input.username != "" && this.input.password != "") {
+              var loginResult = await loginService.login(this.input.username, this.input.password)
+
+              if (loginResult == true) {
+                  console.log('logged in!!!')
+              }
+          }
+      }
+  }
 }
 </script>

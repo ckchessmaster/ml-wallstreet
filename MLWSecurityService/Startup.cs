@@ -7,12 +7,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using MLWSecurityService.Services;
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace MLWSecurityService
 {
     public class Startup
     {
+        private const string CORSPolicy = "MLWallstreetCorePolicy";
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -25,6 +28,14 @@ namespace MLWSecurityService
         {
             services.AddSingleton<SecurityService>();
             services.AddSingleton<UserService>();
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy(CORSPolicy, builder =>
+                {
+                    builder.WithOrigins(Configuration.GetSection("Security:AllowedOrigins").Get<List<string>>().ToArray());
+                });
+            });
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {
@@ -58,6 +69,7 @@ namespace MLWSecurityService
                 app.UseHsts();
             }
 
+            app.UseCors(CORSPolicy);
             app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseMvc();
