@@ -1,7 +1,7 @@
 import axios from 'axios'
 import config from '../config'
 
-var loginService = {
+const loginService = {
      async login (username, password) {
         
         try {
@@ -15,8 +15,14 @@ var loginService = {
             });
 
             console.log(response)
-        } catch(error) {
-            console.log(error)
+        }
+        catch(e) {
+            if(e.response) {
+                return { status: e.response.status }
+            }
+            
+            console.log(e)
+            return { status: 500 }
         }
 
         return true
