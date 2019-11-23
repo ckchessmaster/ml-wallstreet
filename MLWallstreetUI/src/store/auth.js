@@ -1,8 +1,13 @@
+import jwt_decode from 'jwt-decode'
+
 const auth = {
     state: {
-        isLoggedIn: !!localStorage.getItem("token")
+        isLoggedIn: !!localStorage.getItem("token"),
     },
     mutations: {
+        SET_USERNAME (state, username) {
+            state.username = username
+        },
         LOGIN (state) {
             state.isLoggedIn = true
             state.pending = false
@@ -12,20 +17,27 @@ const auth = {
         }
     },
     actions: {
-        login({ commit }, token, username) {
-            localStorage.setItem("token", token);
-            localStorage.setItem("username", username)
+        login({ commit }, token) {
+            localStorage.setItem("token", token)
             commit('LOGIN');
         },
         logout({ commit }) {
             localStorage.removeItem("token");
-            localStorage.removeItem("username")
             commit('LOGOUT');
         }
     },
     getters: {
         isLoggedIn: state => {
             return state.isLoggedIn
+        },
+        username: () => {
+            var token = localStorage.getItem("token")
+
+            if (!token) return ''
+
+            var decoded_token = jwt_decode(token)
+
+            return  decoded_token.username
         }
     }
 }

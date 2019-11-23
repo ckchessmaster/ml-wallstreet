@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MLWSecurityService.Data;
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -63,23 +64,22 @@ namespace MLWSecurityService.Services
             };
         }
 
-        public string GenerateToken()
+        public string GenerateToken(ClaimsIdentity identity)
         {
-            // authentication successful so generate jwt token
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(signingKey);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                        new Claim(ClaimTypes.Name, "MLWAccessToken")
-                }),
-                Expires = DateTime.UtcNow.AddMinutes(15),
-                Audience = audience,
-                Issuer = issuer,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            DateTime issuedAt = DateTime.UtcNow;
+
+            var token = tokenHandler.CreateJwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                subject: identity,
+                notBefore: issuedAt,
+                expires: DateTime.UtcNow.AddMinutes(15),
+                issuedAt: issuedAt,
+                signingCredentials: new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature));
+
             return tokenHandler.WriteToken(token);
         }
     }

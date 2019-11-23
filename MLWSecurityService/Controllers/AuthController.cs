@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -52,7 +54,10 @@ namespace MLWSecurityService.Controllers
 
             if (hashedPassword.Equals(user.Password))
             {
-                return new JsonResult(new { Token = securityService.GenerateToken() });   
+                var identity = new ClaimsIdentity();
+                identity.AddClaim(new Claim("username", user.Username));
+
+                return new JsonResult(new { Token = securityService.GenerateToken(identity) });   
             }
             else
             {
@@ -80,7 +85,9 @@ namespace MLWSecurityService.Controllers
 
             if (hashedKey.Equals(key))
             {
-                return new JsonResult(new { Token = securityService.GenerateToken() });
+                var identity = new ClaimsIdentity();
+
+                return new JsonResult(new { Token = securityService.GenerateToken(identity) });
             }
 
             return new JsonResult(new { Message = "Invalid or missing api-key." });

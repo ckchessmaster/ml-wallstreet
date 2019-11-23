@@ -3,7 +3,6 @@ import config from '../config'
 
 const loginService = {
      async login (username, password) {
-        
         try {
             var response = await axios({
                 method: 'post',
@@ -14,7 +13,10 @@ const loginService = {
                 }
             });
 
-            console.log(response)
+            return {
+                status: response.status,
+                token: response.data.token
+            }
         }
         catch(e) {
             if(e.response) {
@@ -24,8 +26,6 @@ const loginService = {
             console.log(e)
             return { status: 500 }
         }
-
-        return true
     }
 }
 
