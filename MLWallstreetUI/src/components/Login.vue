@@ -45,18 +45,16 @@ import { mapActions } from 'vuex'
 
 export default {
   name: 'Login',
-  data() {
-      return {
-          valid: true,
-          loading: false,
-          invalidLoginCredentials: false,
-          internalServerError: false,
-          username: "",
-          usernameRules: [ v => !!v || 'Username is required.'],
-          password: "",
-          passwordRules: [v => !!v || 'Password is required.']
-      }
-  },
+  data: () => ({
+    valid: true,
+    loading: false,
+    invalidLoginCredentials: false,
+    internalServerError: false,
+    username: "",
+    usernameRules: [ v => !!v || 'Username is required.'],
+    password: "",
+    passwordRules: [v => !!v || 'Password is required.']
+  }),
   methods: {
       ...mapActions({
           saveLogin: 'login'
