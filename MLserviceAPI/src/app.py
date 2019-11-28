@@ -7,8 +7,10 @@ os.chdir(os.path.dirname(__file__) + '/..')
 # Imports
 import services.logger as logger
 from flask import Flask
+from flask_cors import CORS
 from routes.health_route import health_api
 from routes.sentiment_route import sentiment_api
+import config
 
 import middleware.auth_middleware as middleware
 
@@ -20,6 +22,8 @@ app.wsgi_app = middleware.AuthMiddleware(app, app.wsgi_app)
 
 app.register_blueprint(health_api, url_prefix='/api/health')
 app.register_blueprint(sentiment_api, url_prefix='/api/sentiment')
+
+CORS(app, origins=config.ALLOWED_ORIGINS, supports_credentials=True)
 
 # Run the app
 if __name__ == '__main__':

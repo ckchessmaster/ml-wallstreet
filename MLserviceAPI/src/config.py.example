@@ -17,3 +17,6 @@ INTERNAL_ERROR_MESSAGE = 'Something went wrong. Please try again later.'
 # Sentiment config
 BAG_OF_WORDS_SIZE = 1500
 SENTIMENT_SINGLE_THREAD_CUTOFF = 1000
+
+# CORS config
+ALLOWED_ORIGINS = ['localhost']

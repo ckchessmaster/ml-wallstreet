@@ -38,6 +38,9 @@ const auth = {
             var decoded_token = jwt_decode(token)
 
             return  decoded_token.username
+        },
+        token: () => {
+            return localStorage.getItem("token")
         }
     }
 }
