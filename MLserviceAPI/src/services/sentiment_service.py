@@ -1,5 +1,6 @@
 # Imports
 import services.logger as logger
+import services.data_service as data_service
 import pickle
 import re
 import config
@@ -49,7 +50,10 @@ except Exception as e:
 
 # Begin sentiment functions --------------------------------------------------------------------------------------------------
 
-def clean_single(text):
+def clean_single(data):
+    text = data['text']
+    value = data['value']
+
     clean_text = re.sub('[^a-zA-Z]', ' ', text) # Replace all non letters with spaces
     clean_text = clean_text.lower() # Set the entire text to lower case
     clean_text = clean_text.split() # Split the text into it's individual words
@@ -60,39 +64,59 @@ def clean_single(text):
     clean_text = [ps.stem(word) for word in clean_text if not word in set(stopwords.words('english'))]
     clean_text = ' '.join(clean_text) # Put the string back together
 
-    return clean_text
+    return (clean_text, value)
 
-def clean(text):
+def clean(data):
     global is_cleaning
 
     if is_cleaning == True:
         raise CleaningInProgressError()
 
-    if len(text) > config.SENTIMENT_SINGLE_THREAD_CUTOFF:
+    if len(data) > config.SENTIMENT_SINGLE_THREAD_CUTOFF:
         logger.log('Cleaning text.')
         is_cleaning = True
 
         pool = Pool(processes=8)
-        clean_text = pool.map(clean_single, text)
+        clean_data = pool.map(clean_single, data)
         
         is_cleaning = False
         logger.log('Cleaning complete.')
     else:
-        clean_text = map(clean_single, text)
+        clean_data = map(clean_single, data)
 
-    return clean_text
+    return list(clean_data)
 
-def predict(text):
+def predict_single(text):
     global classifier_ready
 
     if not classifier_ready:
         raise ClassifierNotReadyError()
 
-    clean_text = clean(text)
-    vectorized_text = vectorizer.transform(clean_text).toarray()
+    clean_data = clean_single({'text': text, 'value': None})
+
+    vectorized_text = vectorizer.transform([clean_data[0]]).toarray()
     predictions = classifier.predict(vectorized_text)
 
     return predictions
+# end predict()
+
+def train_clean(name):
+    # Load the dataset
+    dataset = data_service.get_dataset(name)
+
+    train(dataset)
+# end train_clean()
+
+def train_dirty(dataset):
+    # Clean the dataset
+    dataset.data = clean(dataset.data)
+
+    # Save the cleaned dataset
+    data_service.save_dataset(dataset)
+
+    # Train
+    train(dataset)
+# end train_dirty()
 
 def train(dataset):
     global is_training
@@ -105,10 +129,12 @@ def train(dataset):
     logger.log('Starting training...')
     is_training = True
 
+    text, values = zip(*dataset.data)
+
     logger.log('Vectorizing the data.')
     vectorizer = CountVectorizer(max_features=config.BAG_OF_WORDS_SIZE)
-    X = vectorizer.fit_transform(dataset.X)
-    y = dataset.y
+    X = vectorizer.fit_transform(text).toarray()
+    y = values
 
     logger.log('Fitting the model.')
     classifier = GaussianNB()
@@ -126,6 +152,13 @@ def train(dataset):
     is_training = False
     logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
     
+def is_busy():
+    global is_cleaning
+    global is_training
+
+    return is_cleaning or is_training
+# end is_busy()
+
 # Use the following section when training to choose between classifiers and their parameters
 # parameters = [{'C': [1, 10, 100, 1000], 'kernel': ['linear']},
 #             {'C': [1, 10, 100, 1000], 'kernel': ['rbf'], 'gamma': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}]
