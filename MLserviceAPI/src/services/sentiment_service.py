@@ -162,7 +162,7 @@ def is_busy():
 # Use the following section when training to choose between classifiers and their parameters
 # parameters = [{'C': [1, 10, 100, 1000], 'kernel': ['linear']},
 #             {'C': [1, 10, 100, 1000], 'kernel': ['rbf'], 'gamma': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}]
-# grid_search = GridSearchCV(estimator = classifier,
+# grid_search = GridSearchCV(estimator = classifier, 
 #                         param_grid = parameters,
 #                         scoring = 'accuracy',
 #                         cv = 10,

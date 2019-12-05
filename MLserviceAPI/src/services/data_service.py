@@ -15,9 +15,9 @@ db = client.ml_wallstreet
 collection = db.datasets
 
 def get_datasets(model_type):
-    datasets = collection.find({'model_type': model_type})
+    datasets = collection.find({'model_type': model_type}, {'_id': 1, 'name': 1})
 
-    return datasets
+    return list(datasets)
 
 def get_dataset(name):
     dataset = collection.find_one({'name': name})

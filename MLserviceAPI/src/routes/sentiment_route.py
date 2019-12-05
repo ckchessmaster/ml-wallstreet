@@ -2,6 +2,8 @@ import config
 import json
 import services.logger as logger
 import services.sentiment_service as sentiment_service
+import services.data_service as data_service
+import bson.json_util as json_util
 
 from collections import namedtuple
 from services.data_service import Dataset
@@ -62,14 +64,11 @@ def is_sentiment_busy():
     return jsonify(sentiment_service.is_busy())
 # end is_sentiment_busy()
 
-#     if json is None or 'TrainingData' not in json:
-#         trainingThread = threading.Thread(target=train, args=(None,))
-#         trainingThread.start()
+@sentiment_api.route('/datasets', methods=['GET'])
+def list_datasets():
+    datasets = data_service.get_datasets('SENTIMENT')
 
-#         return jsonify({"Message":"Training started with pre-cleaned data..."})
-#         #return jsonify({"Message":"Missing required array: InputText"}), 400
+    sanatized_result = json.loads(json_util.dumps(datasets))
 
-#     trainingThread = threading.Thread(target=train, args=(json,))
-#     trainingThread.start()
-
-#     return jsonify({ "Message": "Training Started." })
+    return { 'datasets': sanatized_result }
+# end list_datasets()

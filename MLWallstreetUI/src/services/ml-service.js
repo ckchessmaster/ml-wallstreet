@@ -58,23 +58,20 @@ const mlService = {
         return { status: 200 }
     },
     async getDataSets(baseRoute, token) {
-        console.log(baseRoute)
-        console.log(token)
+        try {
+            let response = await axios({
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer ' + token
+                },
+                url: baseRoute + '/datasets'
+            })
 
-        return [
-            {
-                text: "None",
-                value: "0"
-            },
-            {
-                text: "Test01",
-                value: "123456"
-            },
-            {
-                text: "Test02",
-                value: "456789"
-            }
-        ]
+            return response.data.datasets
+        } catch (e) {
+            console.error(e)
+            return { status: 500 }
+        }
     }
 }
 

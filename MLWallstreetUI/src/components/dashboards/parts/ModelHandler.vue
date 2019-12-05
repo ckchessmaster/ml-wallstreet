@@ -19,7 +19,9 @@
                         <v-col cols="4">
                             <v-select 
                                 label="Select an existing dataset" 
-                                :items="availableDataSets" 
+                                :items="availableDataSets"
+                                item-text="name"
+                                item-value="_id"
                                 v-model="selectedTrainingSet" />
                         </v-col>
                         <v-col cols="2">
@@ -119,7 +121,7 @@ export default {
             }
         }
     },
-    async beforeMount() {
+    async created() {
         // Load the existing datasets
         this.availableDataSets = await mlService.getDataSets(this.baseRoute, this.token)
     }
