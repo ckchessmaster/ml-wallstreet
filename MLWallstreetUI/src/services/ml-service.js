@@ -3,7 +3,7 @@ import axios from 'axios'
 const mlService = {
     async test (baseRoute, token, inputData) {
         try {
-            var response = await axios({
+            let response = await axios({
                 method: 'GET',
                 headers: {
                     Authorization: 'Bearer ' + token
@@ -24,15 +24,13 @@ const mlService = {
         }
     },
     async trainNew(baseRoute, token, trainingSet, trainingSetInfo) {
-        console.log(trainingSet)
-
         let body = {
             name: trainingSetInfo.name,
             data: trainingSet
         }
 
         try {
-            var response = await axios({
+            let response = await axios({
                 method: 'POST',
                 headers: {
                     Authorization: 'Bearer ' + token
@@ -50,12 +48,24 @@ const mlService = {
             return { status: 500 }
         }
     },
-    async trainExisting(baseRoute, token, trainingSet) {
-        console.log(baseRoute)
-        console.log(token)
-        console.log(trainingSet)
+    async trainExisting(baseRoute, token, trainingSetId) {
+        try {
+            let response = await axios({
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer ' + token
+                },
+                url: baseRoute + '/train/' + trainingSetId
+            })
 
-        return { status: 200 }
+            return {
+                status: 200,
+                result: response.data
+            }
+        } catch (e) {
+            console.error(e)
+            return { status: 500 }
+        }
     },
     async getDataSets(baseRoute, token) {
         try {
@@ -67,7 +77,13 @@ const mlService = {
                 url: baseRoute + '/datasets'
             })
 
-            return response.data.datasets
+            let datasets = response.data.datasets
+            datasets.unshift({
+                name: 'None',
+                _id: '0'
+            })
+
+            return datasets
         } catch (e) {
             console.error(e)
             return { status: 500 }

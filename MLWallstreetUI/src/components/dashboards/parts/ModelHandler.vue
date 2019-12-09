@@ -112,7 +112,7 @@ export default {
                 let result = {}
 
                 if (this.selectedTrainingSet !== null && this.selectedTrainingSet != 0) {
-                    result = await mlService.trainNew(this.baseRoute, this.token, this.selectedTrainingSet)
+                    result = await mlService.trainExisting(this.baseRoute, this.token, this.selectedTrainingSet)
                 } else {
                     result = await mlService.trainNew(this.baseRoute, this.token, this.trainingSet, this.trainingSetInfo)
                 }

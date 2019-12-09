@@ -100,9 +100,9 @@ def predict_single(text):
     return predictions
 # end predict()
 
-def train_clean(name):
+def train_clean(dataset_id):
     # Load the dataset
-    dataset = data_service.get_dataset(name)
+    dataset = data_service.get_dataset(dataset_id)
 
     train(dataset)
 # end train_clean()

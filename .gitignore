@@ -2,5 +2,5 @@
 *.dat
 *.bak
 
-# Visual Studio Code
-.vscode
+# VSCode
+.vscode/

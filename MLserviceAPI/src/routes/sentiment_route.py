@@ -1,5 +1,6 @@
 import config
 import json
+import threading
 import services.logger as logger
 import services.sentiment_service as sentiment_service
 import services.data_service as data_service
@@ -7,6 +8,8 @@ import bson.json_util as json_util
 
 from collections import namedtuple
 from services.data_service import Dataset
+from services.data_service import DatasetInfo
+from uuid import uuid4
 
 from services.sentiment_service import ClassifierNotReadyError
 from services.sentiment_service import CleaningInProgressError
@@ -54,10 +57,24 @@ def train_new():
     if 'data' not in json_body:
         return jsonify({"message":"Missing required query parameter: data"}), 400
 
-    dataset = Dataset(json_body['name'], 'SENTIMENT', json_body['data'])
+    dataset_info = DatasetInfo(str(uuid4()), json_body['name'], 'SENTIMENT')
+    dataset = Dataset(dataset_info, json_body['data'])
 
-    sentiment_service.train_dirty(dataset)
+    thread = threading.Thread(target=sentiment_service.train_dirty, args=(dataset,))
+    thread.start()
+
+    return { 'message': 'Training started.' }
 # end train_new()
+
+@sentiment_api.route('/train/<dataset_id>', methods=['POST'])
+def train_existing(dataset_id):
+    if data_service.get_dataset(dataset_id) is None:
+        return jsonify({"message":"Dataset not found."}), 400
+
+    thread = threading.Thread(target=sentiment_service.train_clean, args=(dataset_id,))
+    thread.start()
+
+    return jsonify({ 'message': 'Training started.' })
 
 @sentiment_api.route('/isBusy', methods=['GET'])
 def is_sentiment_busy():
@@ -70,5 +87,5 @@ def list_datasets():
 
     sanatized_result = json.loads(json_util.dumps(datasets))
 
-    return { 'datasets': sanatized_result }
+    return jsonify({'datasets': sanatized_result })
 # end list_datasets()
