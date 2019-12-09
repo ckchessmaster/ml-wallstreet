@@ -1,5 +1,5 @@
 import config
-import json
+
 import threading
 import services.logger as logger
 import services.sentiment_service as sentiment_service
@@ -81,11 +81,5 @@ def is_sentiment_busy():
     return jsonify(sentiment_service.is_busy())
 # end is_sentiment_busy()
 
-@sentiment_api.route('/datasets', methods=['GET'])
-def list_datasets():
-    datasets = data_service.get_datasets('SENTIMENT')
 
-    sanatized_result = json.loads(json_util.dumps(datasets))
 
-    return jsonify({'datasets': sanatized_result })
-# end list_datasets()

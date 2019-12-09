@@ -2,7 +2,10 @@
      <v-container class="fill-height" fluid>
          <v-row align="center" justify="center">
              <v-col cols="12">
-                <ModelHandler title="Sentiment Analysis Model" :baseRoute="baseRoute + 'sentiment'"></ModelHandler>
+                <ModelHandler 
+                    title="Sentiment Analysis Model" 
+                    :baseRoute="baseRoute" 
+                    modelType="SENTIMENT"></ModelHandler>
              </v-col>
          </v-row>
      </v-container>

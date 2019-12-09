@@ -41,8 +41,8 @@
                 </v-col>
                 <v-col cols="3" class="model-result">
                     <h3>Results</h3>
-                    <div>Accuracy: {{accuracy * 100}}%</div>
-                    <div>Standard Deviation: {{stdDev * 100}}%</div>
+                    <div>Accuracy: {{modelInfo.acc.toFixed(2)}}%</div>
+                    <div>Standard Deviation: {{modelInfo.std_dev.toFixed(2)}}%</div>
                     <div v-if="testResult !== ''">Test Result: {{testResult}}</div>
                 </v-col>
             </v-row>
@@ -59,12 +59,15 @@ export default {
     name: 'ModelHandler',
     props: {
         title: String,
-        baseRoute: String
+        baseRoute: String,
+        modelType: String
     },
     data: () => ({
         // Results
-        accuracy: 0.5,
-        stdDev: 0.2,
+        modelInfo: {
+            acc: 0,
+            std_dev: 0
+        },
         testResult: '',
         // Training Info
         isFileUploading: false,
@@ -123,7 +126,8 @@ export default {
     },
     async created() {
         // Load the existing datasets
-        this.availableDataSets = await mlService.getDataSets(this.baseRoute, this.token)
+        this.availableDataSets = await mlService.getDataSets(this.baseRoute, this.token, this.modelType)
+        this.modelInfo = await mlService.getCurrentModelInfo(this.baseRoute, this.token, this.modelType)
     }
 }
 </script>

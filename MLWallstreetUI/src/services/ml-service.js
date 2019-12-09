@@ -67,14 +67,14 @@ const mlService = {
             return { status: 500 }
         }
     },
-    async getDataSets(baseRoute, token) {
+    async getDataSets(baseRoute, token, modelType) {
         try {
             let response = await axios({
                 method: 'GET',
                 headers: {
                     Authorization: 'Bearer ' + token
                 },
-                url: baseRoute + '/datasets'
+                url: baseRoute + 'models/' + modelType + '/datasets'
             })
 
             let datasets = response.data.datasets
@@ -84,6 +84,24 @@ const mlService = {
             })
 
             return datasets
+        } catch (e) {
+            console.error(e)
+            return { status: 500 }
+        }
+    },
+    async getCurrentModelInfo(baseRoute, token, modelType) {
+        try {
+            let response = await axios({
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer ' + token
+                },
+                url: baseRoute + 'models/' + modelType + '/current'
+            })
+
+            let model = response.data
+
+            return model
         } catch (e) {
             console.error(e)
             return { status: 500 }

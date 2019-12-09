@@ -1,9 +1,13 @@
 # Imports
 import services.logger as logger
 import services.data_service as data_service
+import services.model_service as model_service
 import pickle
 import re
 import config
+
+from services.model_service import Model
+from services.model_service import ModelInfo
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import cross_val_score
@@ -13,6 +17,7 @@ from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords
 
 from multiprocessing import Pool
+from uuid import uuid4
 
 # Custom exceptions
 class CleaningInProgressError(Exception):
@@ -31,22 +36,22 @@ class ClassifierNotReadyError(Exception):
         self.client_message = 'Classifier not ready. Please train your model first.'
 
 # Globals
-classifier_ready = True
+classifier_ready = False
 is_training = False
 is_cleaning = False
 
 # Try to load the vectorizer & classfier
-try:
-    vectorizer = vectorizer = pickle.load(open('models/sentiment.vec', 'rb'))
-except Exception as e:
-    logger.log_error('Error loading vectorizer! ' + str(e.args))
-    classifier_ready = False
+classifier = None
+vectorizer = None
 
-try:
-    classifier = pickle.load(open('models/sentiment.mdl', 'rb'))
-except Exception as e:
-    logger.log_error('Error loading classifier! ' + str(e.args))
-    classifier_ready = False
+model_id = model_service.find_current_model_by_model_type('SENTIMENT')
+if model_id is not None:
+    model = model_service.get_model(model_id)
+
+    classifier = model.predictor
+    vectorizer = model.vectorizor
+    classifier_ready = True
+# endif
 
 # Begin sentiment functions --------------------------------------------------------------------------------------------------
 
@@ -122,6 +127,7 @@ def train(dataset):
     global is_training
     global vectorizer
     global classifier
+    global classifier_ready
 
     if is_training == True:
         raise TrainingInProgressError()
@@ -146,10 +152,12 @@ def train(dataset):
     std_dev = accuracies.std() * 100
 
     print('Saving results.')
-    pickle.dump(vectorizer, open('models/sentiment.vec', 'wb'))
-    pickle.dump(classifier, open('models/sentiment.mdl', 'wb'))
+    model_info = ModelInfo(str(uuid4()), 'SENTIMENT', avg_accuracy, std_dev, True, True)
+    model = Model(model_info, classifier, vectorizer)
+    model_service.save_model(model)
 
     is_training = False
+    classifier_ready = True
     logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
     
 def is_busy():
