@@ -1,14 +1,14 @@
 import axios from 'axios'
 
 const mlService = {
-    async test (baseRoute, token, inputData) {
+    async test (baseRoute, token, inputData, modelType) {
         try {
             let response = await axios({
                 method: 'GET',
                 headers: {
                     Authorization: 'Bearer ' + token
                 },
-                url: baseRoute + '/predict',
+                url: baseRoute + 'models/' + modelType + '/predict',
                 params: {
                     inputText: inputData
                 }
@@ -23,7 +23,7 @@ const mlService = {
             return { status: 500 }
         }
     },
-    async trainNew(baseRoute, token, trainingSet, trainingSetInfo) {
+    async trainNew(baseRoute, token, trainingSet, trainingSetInfo, modelType) {
         let body = {
             name: trainingSetInfo.name,
             data: trainingSet
@@ -35,7 +35,7 @@ const mlService = {
                 headers: {
                     Authorization: 'Bearer ' + token
                 },
-                url: baseRoute + '/train',
+                url: baseRoute + 'models/' + modelType + '/train',
                 data: body
             })
 
@@ -48,14 +48,14 @@ const mlService = {
             return { status: 500 }
         }
     },
-    async trainExisting(baseRoute, token, trainingSetId) {
+    async trainExisting(baseRoute, token, trainingSetId, modelType) {
         try {
             let response = await axios({
                 method: 'POST',
                 headers: {
                     Authorization: 'Bearer ' + token
                 },
-                url: baseRoute + '/train/' + trainingSetId
+                url: baseRoute + 'models/' + modelType + '/train/' + trainingSetId
             })
 
             return {

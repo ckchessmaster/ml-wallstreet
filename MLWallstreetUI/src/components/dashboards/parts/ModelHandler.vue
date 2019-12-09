@@ -89,7 +89,7 @@ export default {
     methods: {
         async test() {
             if (this.testData !== '') {
-                let result = await mlService.test(this.baseRoute, this.token, this.testData)
+                let result = await mlService.test(this.baseRoute, this.token, this.testData, this.modelType)
                 
                 if (result.status === 200) {
                     this.testResult = result.result == 1 ? 'True' : 'False'
@@ -115,9 +115,9 @@ export default {
                 let result = {}
 
                 if (this.selectedTrainingSet !== null && this.selectedTrainingSet != 0) {
-                    result = await mlService.trainExisting(this.baseRoute, this.token, this.selectedTrainingSet)
+                    result = await mlService.trainExisting(this.baseRoute, this.token, this.selectedTrainingSet, this.modelType)
                 } else {
-                    result = await mlService.trainNew(this.baseRoute, this.token, this.trainingSet, this.trainingSetInfo)
+                    result = await mlService.trainNew(this.baseRoute, this.token, this.trainingSet, this.trainingSetInfo, this.modelType)
                 }
                 
                 console.log(result)
