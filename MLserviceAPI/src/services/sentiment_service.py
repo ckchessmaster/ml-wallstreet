@@ -5,6 +5,7 @@ import services.model_service as model_service
 import pickle
 import re
 import config
+import random
 
 from services.model_service import Model
 from services.model_service import ModelInfo
@@ -12,6 +13,7 @@ from services.model_service import ModelInfo
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import cross_val_score
 from sklearn.naive_bayes import GaussianNB
+from sklearn.model_selection import train_test_split
 
 from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords
@@ -137,10 +139,15 @@ def train(dataset):
 
     text, values = zip(*dataset.data)
 
+    dataset_size = len(text)
+    train_size = 0.9 if dataset_size <= config.MAX_DATASET_SIZE else config.MAX_DATASET_SIZE 
+
+    X_train, X_discard, y_train, y_discard = train_test_split(text, values, train_size=train_size)
+
     logger.log('Vectorizing the data.')
     vectorizer = CountVectorizer(max_features=config.BAG_OF_WORDS_SIZE)
-    X = vectorizer.fit_transform(text).toarray()
-    y = values
+    X = vectorizer.fit_transform(X_train).toarray()
+    y = y_train
 
     logger.log('Fitting the model.')
     classifier = GaussianNB()
