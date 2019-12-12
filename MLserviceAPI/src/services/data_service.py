@@ -34,7 +34,7 @@ def get_dataset(dataset_id):
 
 def save_dataset(dataset):
     # Insert record into mongo for tracking
-    dataset_id = collection.insert_one(dataset.info.__dict__).inserted_id
+    dataset_id = collection.insert_one(dataset.info).inserted_id
 
     # Write the dataset to file
     folder_path = 'datasets/'

@@ -52,7 +52,7 @@
 
 <script>
 import mlService from '../../../services/ml-service'
-import utilityService from '../../../services/utility-service'
+import csv from 'csvtojson'
 import { mapGetters } from 'vuex'
 
 export default {
@@ -101,8 +101,9 @@ export default {
                 this.isFileUploading = true
 
                 let reader = new FileReader()
-                reader.onload = (event) => {
-                    this.trainingSet = utilityService.csvToJson(event.target.result, ['value', 'text'])
+                reader.onload = async (event) => {
+                    this.trainingSet = await csv({}).fromString(event.target.result)
+                    console.log(this.trainingSet)
                     this.isFileUploading = false
                 }
                 reader.readAsText(this.trainingSetInfo)

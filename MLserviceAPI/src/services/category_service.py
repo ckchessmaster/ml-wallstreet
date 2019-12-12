@@ -1,33 +1,32 @@
 # Imports
-import services.logger as logger
-import services.data_service as data_service
-import services.model_service as model_service
 import re
 import config
-import random
+import services.logger as logger
+import services.model_service as model_service
+import services.data_service as data_service
 
 from services.model_service import Model
 
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.model_selection import cross_val_score
-from sklearn.naive_bayes import GaussianNB
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 from sklearn.model_selection import train_test_split
 
 from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords
 
-from multiprocessing import Pool
-from uuid import uuid4
-
 from services.exception import CleaningInProgressError
 from services.exception import TrainingInProgressError
 from services.exception import ClassifierNotReadyError
+
+from multiprocessing import Pool
+from uuid import uuid4
 
 # Globals
 classifier_ready = False
 is_training = False
 is_cleaning = False
-MODEL_TYPE = 'SENTIMENT'
+MODEL_TYPE = 'CATEGORY'
 
 # Try to load the vectorizer & classfier
 classifier = None
@@ -42,8 +41,7 @@ if model_id is not None:
     classifier_ready = True
 # endif
 
-# Begin sentiment functions --------------------------------------------------------------------------------------------------
-
+# Begin category functions --------------------------------------------------------------------------------------------------
 def clean_single(data):
     text = data['text']
     value = data['value']
@@ -140,13 +138,17 @@ def train(dataset):
     y = y_train
 
     logger.log('Fitting the model.')
-    classifier = GaussianNB()
-    classifier.fit(X, y)
+    silhoutte_scores = []
 
-    logger.log('Determining accuracy.')
-    accuracies = cross_val_score(estimator=classifier, X=X, y=y, cv=10, pre_dispatch=8)
-    avg_accuracy = accuracies.mean() * 100
-    std_dev = accuracies.std() * 100
+    for k in range(1, config.KMAX):
+        classifier = KMeans(n_clusters=k, init='k-means++', max_iter=300, n_init=10)
+        classifier.fit(X)
+        labels = classifier.labels_
+        silhoutte_scores.append(silhouette_score(X, labels, metric='euclidean'))
+    # end for
+
+    ideal_k = max(silhoutte_scores)
+    classifier = KMeans(n_clusters=ideal_k, init='k-means++', max_iter=300, n_init=10)
 
     print('Saving results.')
     model_info = {
@@ -154,8 +156,7 @@ def train(dataset):
         'model_type': MODEL_TYPE,
         'has_vectorizor': True,
         'is_current_model': True,
-        'acc': avg_accuracy,
-        'std_dev': std_dev
+        'num_clusters': ideal_k
     }
 
     model = Model(model_info, classifier, vectorizer)
@@ -163,7 +164,7 @@ def train(dataset):
 
     is_training = False
     classifier_ready = True
-    logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
+    logger.log(f'Training completed.\nResults:\nNumber of Clusters: {ideal_k}')
     
 def is_busy():
     global is_cleaning
@@ -171,15 +172,3 @@ def is_busy():
 
     return is_cleaning or is_training
 # end is_busy()
-
-# Use the following section when training to choose between classifiers and their parameters
-# parameters = [{'C': [1, 10, 100, 1000], 'kernel': ['linear']},
-#             {'C': [1, 10, 100, 1000], 'kernel': ['rbf'], 'gamma': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]}]
-# grid_search = GridSearchCV(estimator = classifier, 
-#                         param_grid = parameters,
-#                         scoring = 'accuracy',
-#                         cv = 10,
-#                         pre_dispatch=8)
-# grid_search = grid_search.fit(X_train, y_train)
-# best_accuracy = grid_search.best_score_
-# best_parameters = grid_search.best_params_

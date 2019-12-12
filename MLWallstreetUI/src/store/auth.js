@@ -2,7 +2,7 @@ import jwt_decode from 'jwt-decode'
 
 const auth = {
     state: {
-        isLoggedIn: !!localStorage.getItem("token"),
+        isLoggedIn: !!sessionStorage.getItem("token"),
     },
     mutations: {
         SET_USERNAME (state, username) {
@@ -18,11 +18,11 @@ const auth = {
     },
     actions: {
         login({ commit }, token) {
-            localStorage.setItem("token", token)
+            sessionStorage.setItem("token", token)
             commit('LOGIN');
         },
         logout({ commit }) {
-            localStorage.removeItem("token");
+            sessionStorage.removeItem("token");
             commit('LOGOUT');
         }
     },
@@ -31,7 +31,7 @@ const auth = {
             return state.isLoggedIn
         },
         username: () => {
-            var token = localStorage.getItem("token")
+            var token = sessionStorage.getItem("token")
 
             if (!token) return ''
 
@@ -40,7 +40,7 @@ const auth = {
             return  decoded_token.username
         },
         token: () => {
-            return localStorage.getItem("token")
+            return sessionStorage.getItem("token")
         }
     }
 }
