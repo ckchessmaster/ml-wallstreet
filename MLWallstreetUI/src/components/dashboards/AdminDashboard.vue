@@ -5,7 +5,13 @@
                 <ModelHandler 
                     title="Sentiment Analysis Model" 
                     :baseRoute="baseRoute" 
-                    modelType="SENTIMENT"></ModelHandler>
+                    modelType="SENTIMENT" 
+                />
+                <ModelHandler 
+                    title="Category Analysis Model" 
+                    :baseRoute="baseRoute" 
+                    modelType="CATEGORY" 
+                />
              </v-col>
          </v-row>
      </v-container>
