@@ -19,7 +19,7 @@ from flask import jsonify
 from flask import request
 
 from services.sentiment_service import MODEL_TYPE as SENTIMENT_MODEL_TYPE
-from services.sentiment_service import MODEL_TYPE as CATEGORY_MODEL_TYPE
+from services.category_service import MODEL_TYPE as CATEGORY_MODEL_TYPE
 
 model_api = Blueprint('model_api', __name__)
 
@@ -28,6 +28,9 @@ def get_model_info(model_type):
     model_id = model_service.find_current_model_by_model_type(model_type)
 
     model = model_service.get_model(model_id)
+
+    if model is None:
+        return jsonify({'acc': 0.0, 'std_dev': 0.0})
 
     return jsonify(model.info)
 # end get_model_info()

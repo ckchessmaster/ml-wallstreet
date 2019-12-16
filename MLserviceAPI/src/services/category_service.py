@@ -11,6 +11,9 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import cross_val_score
 
 from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords
@@ -42,7 +45,7 @@ if model_id is not None:
 # endif
 
 # Begin category functions --------------------------------------------------------------------------------------------------
-def clean_single(data):
+def clean_text_single(data):
     text = data['text']
     value = data['value']
 
@@ -65,19 +68,31 @@ def clean(data):
     if is_cleaning == True:
         raise CleaningInProgressError()
 
+    # Clean the text
     if len(data) > config.SENTIMENT_SINGLE_THREAD_CUTOFF:
         logger.log('Cleaning text.')
         is_cleaning = True
 
         pool = Pool(processes=8)
-        clean_data = pool.map(clean_single, data)
+        clean_data = pool.map(clean_text_single, data)
         
         is_cleaning = False
         logger.log('Cleaning complete.')
     else:
-        clean_data = map(clean_single, data)
+        clean_data = map(clean_text_single, data)
 
-    return list(clean_data)
+    clean_data = list(clean_data)
+
+    # Encode the categories
+    text, values = zip(*clean_data)
+
+    label_encoder = LabelEncoder()
+    values = label_encoder.fit_transform(values)
+
+    one_hot_encoder = OneHotEncoder(drop='first', handle_unknown='error', categories='auto')
+    values = one_hot_encoder.fit_transform(values.reshape(-1, 1)).toarray()
+
+    return zip(text, values)
 # clean()
 
 def predict_single(text):
@@ -86,7 +101,7 @@ def predict_single(text):
     if not classifier_ready:
         raise ClassifierNotReadyError()
 
-    clean_data = clean_single({'text': text, 'value': None})
+    clean_data = clean_text_single({'text': text, 'value': None})
 
     vectorized_text = vectorizer.transform([clean_data[0]]).toarray()
     predictions = classifier.predict(vectorized_text)
@@ -138,17 +153,13 @@ def train(dataset):
     y = y_train
 
     logger.log('Fitting the model.')
-    silhoutte_scores = []
+    classifier = KNeighborsClassifier(n_neighbors = 5, metric = 'minkowski', p = 2)
+    classifier.fit(X, y)
 
-    for k in range(1, config.KMAX):
-        classifier = KMeans(n_clusters=k, init='k-means++', max_iter=300, n_init=10)
-        classifier.fit(X)
-        labels = classifier.labels_
-        silhoutte_scores.append(silhouette_score(X, labels, metric='euclidean'))
-    # end for
-
-    ideal_k = max(silhoutte_scores)
-    classifier = KMeans(n_clusters=ideal_k, init='k-means++', max_iter=300, n_init=10)
+    logger.log('Determining accuracy.')
+    accuracies = cross_val_score(estimator=classifier, X=X, y=y, cv=10, pre_dispatch=8)
+    avg_accuracy = accuracies.mean() * 100
+    std_dev = accuracies.std() * 100
 
     print('Saving results.')
     model_info = {
@@ -156,7 +167,8 @@ def train(dataset):
         'model_type': MODEL_TYPE,
         'has_vectorizor': True,
         'is_current_model': True,
-        'num_clusters': ideal_k
+        'acc': avg_accuracy,
+        'std_dev': std_dev
     }
 
     model = Model(model_info, classifier, vectorizer)
@@ -164,7 +176,7 @@ def train(dataset):
 
     is_training = False
     classifier_ready = True
-    logger.log(f'Training completed.\nResults:\nNumber of Clusters: {ideal_k}')
+    logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
     
 def is_busy():
     global is_cleaning

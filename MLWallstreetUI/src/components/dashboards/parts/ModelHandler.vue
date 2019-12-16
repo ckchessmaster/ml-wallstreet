@@ -103,7 +103,6 @@ export default {
                 let reader = new FileReader()
                 reader.onload = async (event) => {
                     this.trainingSet = await csv({}).fromString(event.target.result)
-                    console.log(this.trainingSet)
                     this.isFileUploading = false
                 }
                 reader.readAsText(this.trainingSetInfo)
