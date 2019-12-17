@@ -81,18 +81,7 @@ def clean(data):
     else:
         clean_data = map(clean_text_single, data)
 
-    clean_data = list(clean_data)
-
-    # Encode the categories
-    text, values = zip(*clean_data)
-
-    label_encoder = LabelEncoder()
-    values = label_encoder.fit_transform(values)
-
-    one_hot_encoder = OneHotEncoder(drop='first', handle_unknown='error', categories='auto')
-    values = one_hot_encoder.fit_transform(values.reshape(-1, 1)).toarray()
-
-    return zip(text, values)
+    return list(clean_data)
 # clean()
 
 def predict_single(text):
@@ -147,17 +136,24 @@ def train(dataset):
 
     X_train, X_discard, y_train, y_discard = train_test_split(text, values, train_size=train_size)
 
+    logger.log('Encoding the data.')
+    label_encoder = LabelEncoder()
+    y_labeled = label_encoder.fit_transform(y_train)
+
+    one_hot_encoder = OneHotEncoder(drop='first', handle_unknown='error', categories='auto')
+    y_encoded = one_hot_encoder.fit_transform(y_labeled.reshape(-1, 1)).toarray()
+
     logger.log('Vectorizing the data.')
     vectorizer = CountVectorizer(max_features=config.BAG_OF_WORDS_SIZE)
     X = vectorizer.fit_transform(X_train).toarray()
-    y = y_train
+    y = y_encoded
 
     logger.log('Fitting the model.')
     classifier = KNeighborsClassifier(n_neighbors = 5, metric = 'minkowski', p = 2)
     classifier.fit(X, y)
 
     logger.log('Determining accuracy.')
-    accuracies = cross_val_score(estimator=classifier, X=X, y=y, cv=10, pre_dispatch=8)
+    accuracies = cross_val_score(estimator=classifier, X=X, y=y_labeled, cv=10, pre_dispatch=8, n_jobs=8)
     avg_accuracy = accuracies.mean() * 100
     std_dev = accuracies.std() * 100
 

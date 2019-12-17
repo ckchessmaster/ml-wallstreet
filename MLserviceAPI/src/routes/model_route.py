@@ -11,7 +11,6 @@ import services.category_service as category_service
 import services.logger as logger
 import bson.json_util as json_util
 
-from services.data_service import DatasetInfo
 from services.data_service import Dataset
 
 from flask import Blueprint
@@ -56,7 +55,11 @@ def train_new(model_type):
     if 'data' not in json_body:
         return jsonify({"message":"Missing required query parameter: data"}), 400
 
-    dataset_info = DatasetInfo(str(uuid4()), json_body['name'], SENTIMENT_MODEL_TYPE)
+    dataset_info = {
+        "_id": str(uuid4()),
+        "name": json_body['name'],
+        "model_type": model_type
+    }
     dataset = Dataset(dataset_info, json_body['data'])
 
     if model_type == SENTIMENT_MODEL_TYPE:

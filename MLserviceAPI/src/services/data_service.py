@@ -4,12 +4,6 @@ import os.path as path
 
 from pymongo import MongoClient
 
-class DatasetInfo():
-    def __init__(self, _id, name, model_type):
-        self._id = _id
-        self.name = name
-        self.model_type = model_type
-
 class Dataset():
     def __init__(self, info, data):
         self.info = info
