@@ -92,7 +92,7 @@ export default {
                 let result = await mlService.test(this.baseRoute, this.token, this.testData, this.modelType)
                 
                 if (result.status === 200) {
-                    this.testResult = result.result == 1 ? 'True' : 'False'
+                    this.testResult = result.result
                 }
             }
         },

@@ -4,6 +4,9 @@ import os.path as path
 
 from pymongo import MongoClient
 from collections import namedtuple
+from keras.models import load_model
+
+from utility.ann import ANN
 
 class Model():
     def __init__(self, info, predictor, vectorizor=None):
@@ -15,19 +18,27 @@ class Model():
 
 collection = MongoClient().MLService.models
 
+def get_model_info(model_id):
+    return collection.find_one({'_id': model_id})
+# get_model_info
+
 def get_model(model_id):
     model_info = collection.find_one({'_id': model_id})
 
     if model_info is None:
         return None
 
-    predictor = pickle.load(open('models/' + model_id + '.mdl', 'rb'))
-    vectorizor = None
+    if 'use_keras_save' in model_info and model_info['use_keras_save'] == True:
+        model = ANN()
+        model.load('models/' + model_id + '.mdl')
+    else:
+        model = pickle.load(open('models/' + model_id + '.mdl', 'rb'))
 
+    vectorizor = None
     if model_info['has_vectorizor'] == True:
         vectorizor = pickle.load(open('models/' + model_id + '.vec', 'rb'))
 
-    return Model(model_info, predictor, vectorizor)
+    return Model(model_info, model, vectorizor)
 # end get_model()
 
 def save_model(model):
@@ -52,7 +63,10 @@ def save_model(model):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
 
-    pickle.dump(model.predictor, open(folder_path + model_id + '.mdl', 'wb'))
+    if 'use_keras_save' in model.info and model.info['use_keras_save'] == True:
+        model.predictor.save(folder_path + model_id + '.mdl')
+    else:
+        pickle.dump(model.predictor, open(folder_path + model_id + '.mdl', 'wb'))
 
     if model.info['has_vectorizor']:
         pickle.dump(model.vectorizor, open(folder_path + model_id + '.vec', 'wb'))

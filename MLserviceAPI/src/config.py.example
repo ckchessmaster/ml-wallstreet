@@ -11,12 +11,21 @@
 # DEV_SECURITY - Development level with security
 ENVIRONMNET = 'DEV'
 
+ADDITIONAL_DEBUGGING_SUPPORT = False
+
 MLWSECURITYSERVICE_URL = 'localhost:44373'
 INTERNAL_ERROR_MESSAGE = 'Something went wrong. Please try again later.'
 
+
+
 # Sentiment config
-BAG_OF_WORDS_SIZE = 1500
+BAG_OF_WORDS_SIZE = 500
 SENTIMENT_SINGLE_THREAD_CUTOFF = 1000
+MAX_DATASET_SIZE = 50000
+TRAINING_SET_SIZE = 0.75
+
+# Category config
+KMAX = 10
 
 # CORS config
-ALLOWED_ORIGINS = ['localhost']
+ALLOWED_ORIGINS = ['http://localhost:8080']

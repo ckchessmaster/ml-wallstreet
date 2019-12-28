@@ -9,7 +9,7 @@ import random
 from services.model_service import Model
 
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, GridSearchCV
 from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import train_test_split
 
