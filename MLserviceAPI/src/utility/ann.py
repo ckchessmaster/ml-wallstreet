@@ -1,3 +1,5 @@
+import os
+
 from keras.models import load_model, Sequential 
 from keras import backend as K
 
@@ -5,10 +7,13 @@ import tensorflow as tf
 import services.logger as logger
 
 class ANN:
-    def __init__(self, ann_type='NONE', nb_epoch=10):
-        self.session = tf.Session()
-        self.graph = tf.get_default_graph()
-        self.nb_epoch = nb_epoch
+    def __init__(self, ann_type='NONE', epochs=10):
+        self.session = tf.compat.v1.Session()
+        self.graph = tf.compat.v1.get_default_graph()
+        self.epochs = epochs
+
+        # disable tensorflow warnings
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 
         with self.graph.as_default():
             with self.session.as_default():
@@ -65,7 +70,7 @@ class ANN:
     def fit(self, X, y):
         with self.graph.as_default():
             with self.session.as_default():
-                self.model.fit(X, y, batch_size=10, nb_epoch=self.nb_epoch)
+                self.model.fit(X, y, batch_size=10, epochs=self.epochs)
     # end fit
 
     def predict(self, X):

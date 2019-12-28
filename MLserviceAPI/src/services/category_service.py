@@ -8,7 +8,7 @@ import time
 
 from services.model_service import Model
 
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -17,6 +17,9 @@ from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
+
+from keras.layers import Dense
+from keras.optimizers import SGD
 
 from nltk.stem.porter import PorterStemmer
 from nltk.corpus import stopwords
@@ -28,7 +31,6 @@ from utility.ann import ANN
 
 from multiprocessing import Pool
 from uuid import uuid4
-from keras.layers import Dense
 
 # Globals
 classifier_ready = False
@@ -46,6 +48,8 @@ if model_id is not None:
 
     classifier = model.predictor
     vectorizer = model.vectorizor
+    label_encoder = model.label_encoder
+    one_hot_encoder = model.one_hot_encoder
 
     classifier_ready = True
 # endif
@@ -100,9 +104,11 @@ def predict_single(text):
 
     vectorized_text = vectorizer.transform([clean_data[0]]).toarray()
 
-    predictions = classifier.predict(vectorized_text)
+    prediction = classifier.predict(vectorized_text)
 
-    return predictions
+    prediction = label_encoder.inverse_transform(one_hot_encoder.inverse_transform(prediction))
+
+    return prediction
 # end predict()
 
 def train_clean(dataset_id):
@@ -128,6 +134,8 @@ def train(dataset):
     global vectorizer
     global classifier
     global classifier_ready
+    global label_encoder
+    global one_hot_encoder
 
     if is_training == True:
         raise TrainingInProgressError()
@@ -150,7 +158,9 @@ def train(dataset):
     y_test_encoded = one_hot_encoder.transform(y_test_labeled.reshape(-1, 1)).toarray()
 
     logger.log('Vectorizing the data.')
-    vectorizer = CountVectorizer(max_features=config.BAG_OF_WORDS_SIZE)
+    # vectorizer = CountVectorizer(max_features=config.CATEGORY_BAG_OF_WORDS_SIZE)
+    vectorizer = TfidfVectorizer(max_features=config.CATEGORY_BAG_OF_WORDS_SIZE)
+
     X_train = vectorizer.fit_transform(X_train).toarray()
     y_train = y_train_encoded
 
@@ -164,14 +174,18 @@ def train(dataset):
     start = time.time()
 
     # classifier = KNeighborsClassifier(n_neighbors = 3, metric = 'minkowski', p = 1, weights='distance') # acc: 44%, 25%
-    # classifier = RandomForestClassifier(n_estimators=100, criterion='gini', n_jobs=-1) # acc: 59%, 35%
+    classifier = RandomForestClassifier(n_estimators=100, criterion='gini', n_jobs=-1) # acc: 64%, 96%
     # classifier = GaussianNB() # acc: 30%, 3%
 
-    # ANN classifier
-    classifier = ANN('SEQUENTIAL', 10) # acc: 60%, 35%
-    classifier.add(Dense(output_dim=250, activation='relu', input_dim=config.BAG_OF_WORDS_SIZE))
-    classifier.add(Dense(output_dim=num_categories, activation='softmax'))
-    classifier.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+    # ANN classifier acc: 67%, 81%
+    # classifier = ANN('SEQUENTIAL', 10) 
+    # classifier.add(Dense(activation='relu', input_dim=config.CATEGORY_BAG_OF_WORDS_SIZE, units=250))
+    # classifier.add(Dense(activation='softmax', units=num_categories))
+
+    # # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
+    # optimizer = 'adadelta' # Best: adadelta
+
+    # classifier.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
     classifier.fit(X_train, y_train)
 
@@ -212,28 +226,30 @@ def train(dataset):
     # logger.log(f'Best accuracy: {best_accuracy}\nBest Parameters: {best_parameters}\nTraining complete. In order to save model please re-run with the given parameters.')
 
     logger.log('Determining accuracy.')
-    # accuracies = cross_val_score(estimator=classifier, X=X, y=y_labeled, cv=10, n_jobs=-1)
 
-    # avg_accuracy = accuracies.mean() * 100
-    # std_dev = accuracies.std() * 100
+    # Acc for statistical models
+    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train_labeled, cv=10, n_jobs=-1)
+    avg_accuracy = accuracies.mean() * 100
+    std_dev = accuracies.std() * 100
 
     # Acc for ANN:
-    avg_accuracy = classifier.evaluate(X_test, y_test)
-    avg_accuracy = avg_accuracy * 100
-    std_dev = 0
+    # avg_accuracy = classifier.evaluate(X_test, y_test)
+    # avg_accuracy = avg_accuracy * 100
+    # std_dev = 0
 
     print('Saving results.')
     model_info = {
         '_id': str(uuid4()),
         'model_type': MODEL_TYPE,
         'has_vectorizor': True,
+        'has_encoders': True,
         'is_current_model': True,
         'acc': avg_accuracy,
         'std_dev': std_dev,
-        'use_keras_save': True
+        'use_keras_save': False
     }
 
-    model = Model(model_info, classifier, vectorizer)
+    model = Model(model_info, classifier, vectorizer, label_encoder, one_hot_encoder)
     model_service.save_model(model)
 
     is_training = False

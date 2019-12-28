@@ -135,7 +135,7 @@ def train(dataset):
     X_train, X_discard, y_train, y_discard = train_test_split(text, values, train_size=train_size)
 
     logger.log('Vectorizing the data.')
-    vectorizer = CountVectorizer(max_features=config.BAG_OF_WORDS_SIZE)
+    vectorizer = CountVectorizer(max_features=config.SENTIMENT_BAG_OF_WORDS_SIZE)
     X = vectorizer.fit_transform(X_train).toarray()
     y = y_train
 

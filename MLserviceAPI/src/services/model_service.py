@@ -9,10 +9,12 @@ from keras.models import load_model
 from utility.ann import ANN
 
 class Model():
-    def __init__(self, info, predictor, vectorizor=None):
+    def __init__(self, info, predictor, vectorizor=None, label_encoder=None, one_hot_encoder=None):
         self.info = info
         self.predictor = predictor
         self.vectorizor = vectorizor
+        self.label_encoder = label_encoder
+        self.one_hot_encoder = one_hot_encoder
     # end __init__()
 # end class Model
 
@@ -38,7 +40,13 @@ def get_model(model_id):
     if model_info['has_vectorizor'] == True:
         vectorizor = pickle.load(open('models/' + model_id + '.vec', 'rb'))
 
-    return Model(model_info, model, vectorizor)
+    label_encoder = None
+    one_hot_encoder = None
+    if 'has_encoders' in model_info and model_info['has_encoders'] == True:
+        label_encoder = pickle.load(open('models/' + model_id + '.lbl', 'rb'))
+        one_hot_encoder = pickle.load(open('models/' + model_id + '.ohe', 'rb'))
+
+    return Model(model_info, model, vectorizor, label_encoder, one_hot_encoder)
 # end get_model()
 
 def save_model(model):
@@ -70,6 +78,10 @@ def save_model(model):
 
     if model.info['has_vectorizor']:
         pickle.dump(model.vectorizor, open(folder_path + model_id + '.vec', 'wb'))
+
+    if 'has_encoders' in model.info and model.info['has_encoders'] == True:
+        pickle.dump(model.label_encoder, open(folder_path + model_id + '.lbl', 'wb'))
+        pickle.dump(model.one_hot_encoder, open(folder_path + model_id + '.ohe', 'wb'))
 
     return model_id
 # end save_model()
