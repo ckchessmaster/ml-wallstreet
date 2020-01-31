@@ -20,6 +20,14 @@
               <v-list-item-title>Admin</v-list-item-title>
             </v-list-item-content>
           </v-list-item>
+          <v-list-item link class="logout-btn">
+            <v-list-item-action >
+              <v-icon>mdi-exit-to-app</v-icon>
+            </v-list-item-action>
+            <v-list-item-content v-on:click="logout">
+              <v-list-item-title>Logout</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
         </v-list>
       </v-navigation-drawer>
 
@@ -46,6 +54,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import { mapActions } from 'vuex'
 import Login from './components/Login'
 import StatusDashboard from './components/dashboards/StatusDashboard'
 import AdminDashboard from './components/dashboards/AdminDashboard'
@@ -74,6 +83,11 @@ export default {
   },
   created() {
     this.$vuetify.theme.dark = true
+  },
+  methods: {
+    ...mapActions([
+      'logout'
+    ])
   }
 }
 </script>
@@ -81,5 +95,11 @@ export default {
 <style>
 .error-message {
   color: var(--v-error-base);
+}
+
+.logout-btn {
+  position: absolute; 
+  bottom:0; 
+  width: 100%
 }
 </style>

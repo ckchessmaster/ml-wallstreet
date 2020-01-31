@@ -125,6 +125,7 @@ export default {
         }
     },
     async created() {
+        // TODO: Make this only fire when the user is logged in
         // Load the existing datasets
         this.availableDataSets = await mlService.getDataSets(this.baseRoute, this.token, this.modelType)
         this.modelInfo = await mlService.getCurrentModelInfo(this.baseRoute, this.token, this.modelType)

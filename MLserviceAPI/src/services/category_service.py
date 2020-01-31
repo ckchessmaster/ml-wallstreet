@@ -182,7 +182,7 @@ def train(dataset):
     # classifier.add(Dense(activation='relu', input_dim=config.CATEGORY_BAG_OF_WORDS_SIZE, units=250))
     # classifier.add(Dense(activation='softmax', units=num_categories))
 
-    # # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
+    # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
     # optimizer = 'adadelta' # Best: adadelta
 
     # classifier.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])

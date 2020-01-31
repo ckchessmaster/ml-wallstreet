@@ -9,6 +9,7 @@ import services.model_service as model_service
 import services.data_service as data_service
 import services.sentiment_service as sentiment_service
 import services.category_service as category_service
+import services.stock_service as stock_service
 import services.logger as logger
 import bson.json_util as json_util
 
@@ -19,6 +20,7 @@ from flask import request
 from services.data_service import Dataset
 from services.sentiment_service import MODEL_TYPE as SENTIMENT_MODEL_TYPE
 from services.category_service import MODEL_TYPE as CATEGORY_MODEL_TYPE
+from services.stock_service import MODEL_TYPE as STOCK_MODEL_TYPE
 
 model_api = Blueprint('model_api', __name__)
 
@@ -85,6 +87,18 @@ def train_new(model_type):
             process.start()
     # endif
 
+    elif model_type == STOCK_MODEL_TYPE:
+        if stock_service.is_busy():
+            return jsonify({"message":"System is busy. Please try again later."}), 500
+        # endif
+        if config.ADDITIONAL_DEBUGGING_SUPPORT == True:
+            thread = threading.Thread(target=stock_service.train_dirty, args=(dataset,))
+            thread.start()
+        else:
+            process = Process(target=stock_service.train_dirty, args=(dataset,))
+            process.start()
+    # endif
+
     return jsonify({ 'message': 'Training started.' })
 # end train_new()
 
@@ -115,6 +129,18 @@ def train_existing(model_type, dataset_id):
         else:
             process = Process(target=category_service.train_clean, args=(dataset_id,))
             process.start()
+
+    elif model_type == STOCK_MODEL_TYPE:
+        if stock_service.is_busy():
+            return jsonify({"message":"System is busy. Please try again later."}), 500
+        # endif
+
+        if config.ADDITIONAL_DEBUGGING_SUPPORT == True:
+            thread = threading.Thread(target=stock_service.train_clean, args=(dataset_id,))
+            thread.start()
+        else:
+            process = Process(target=stock_service.train_clean, args=(dataset_id,))
+            process.start()
     # endif
 
     return jsonify({ 'message': 'Training started.' })
@@ -138,6 +164,12 @@ def predict_single(model_type):
     elif model_type == CATEGORY_MODEL_TYPE:
         try:
             result = category_service.predict_single(input_text)
+        except Exception as e:
+            logger.log_error('Error trying to predict sentiment. ' + str(e.args))
+            return jsonify({"message": config.INTERNAL_ERROR_MESSAGE}), 500
+    elif model_type == STOCK_MODEL_TYPE:
+        try:
+            result = stock_service.predict_single(input_text)
         except Exception as e:
             logger.log_error('Error trying to predict sentiment. ' + str(e.args))
             return jsonify({"message": config.INTERNAL_ERROR_MESSAGE}), 500

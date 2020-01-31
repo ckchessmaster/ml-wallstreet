@@ -16,11 +16,12 @@ class AuthMiddleware(object):
         request_uri = environ['REQUEST_URI']
         remote_addr = environ['REMOTE_ADDR']
 
-        return (f'Invalid login attempt! REQUEST_METHOD: {request_method}, REQUEST_URI: {request_uri}, REMOTE_ADDR: {remote_addr}')
+        return (f'Invalid access attempt! REQUEST_METHOD: {request_method}, REQUEST_URI: {request_uri}, REMOTE_ADDR: {remote_addr}')
 
     def __call__(self, environ, start_response):
         # If we are in a dev environment don't worry about security
-        if config.ENVIRONMNET == 'DEV':
+        # If this is a preflight CORS request then go ahead and let it through as well
+        if config.ENVIRONMNET == 'DEV' or environ['REQUEST_METHOD'] == 'OPTIONS':
             return self.app(environ, start_response)
 
         # The health route is the only route which does not need authentication
@@ -43,10 +44,11 @@ class AuthMiddleware(object):
             
         # Validate the token with the security service
         url = config.MLWSECURITYSERVICE_URL
+        port = config.MLWSECURITYSERVICE_PORT
 
         # TODO: context should not allow self signed certs, this is only for dev
         try:
-            con = http.client.HTTPSConnection(url, timeout=10, context = ssl._create_unverified_context())
+            con = http.client.HTTPSConnection(url, port=port, timeout=30, context=ssl._create_unverified_context())
             requestHeaders = {'Content-type': 'application/json'}
             requestPayload = environ['HTTP_AUTHORIZATION']
             json_data = json.dumps({"token":requestPayload})

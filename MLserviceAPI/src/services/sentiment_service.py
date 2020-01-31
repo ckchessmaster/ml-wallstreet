@@ -164,7 +164,8 @@ def train(dataset):
     is_training = False
     classifier_ready = True
     logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
-    
+# end train()
+
 def is_busy():
     global is_cleaning
     global is_training

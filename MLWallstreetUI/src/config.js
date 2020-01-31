@@ -1,5 +1,5 @@
 var config = {
-    security_service_base_url: 'https://localhost:44373/api/',
+    security_service_base_url: 'https://mlwsecurityservice.azurewebsites.net/api/',
     ml_service_base_url: 'http://localhost:5000/api/'
 }
 

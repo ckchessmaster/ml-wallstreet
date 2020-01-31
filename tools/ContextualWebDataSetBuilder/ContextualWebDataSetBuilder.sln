@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContextualWebDataSetBuilder", "ContextualWebDataSetBuilder.csproj", "{A8FDF8B9-3F8A-4035-8AC0-C9AE64A3354A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A8FDF8B9-3F8A-4035-8AC0-C9AE64A3354A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8FDF8B9-3F8A-4035-8AC0-C9AE64A3354A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8FDF8B9-3F8A-4035-8AC0-C9AE64A3354A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8FDF8B9-3F8A-4035-8AC0-C9AE64A3354A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {175B041E-BC81-408F-8311-D160F4F86D38}
+	EndGlobalSection
+EndGlobal

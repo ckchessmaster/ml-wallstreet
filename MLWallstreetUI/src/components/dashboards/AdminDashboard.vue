@@ -12,6 +12,11 @@
                     :baseRoute="baseRoute" 
                     modelType="CATEGORY" 
                 />
+                <ModelHandler 
+                    title="Stock Analysis Model" 
+                    :baseRoute="baseRoute" 
+                    modelType="STOCK" 
+                />
              </v-col>
          </v-row>
      </v-container>
