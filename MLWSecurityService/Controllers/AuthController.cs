@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,6 +35,11 @@ namespace MLWSecurityService.Controllers
             public string Password { get; set; }
         }
 
+        public class ValidateTokenRequest
+        {
+            public string Token { get; set; }
+        }
+
         [HttpPost]
         [Route("login")]
         public async Task<IActionResult> Login([FromBody]LoginRequest request)
@@ -54,10 +60,19 @@ namespace MLWSecurityService.Controllers
 
             if (hashedPassword.Equals(user.Password))
             {
+                Guid refreshTokenID = Guid.NewGuid();
+
                 var identity = new ClaimsIdentity();
                 identity.AddClaim(new Claim("username", user.Username));
+                
+                var token = securityService.GenerateToken(identity);
 
-                return new JsonResult(new { Token = securityService.GenerateToken(identity) });   
+                identity.AddClaim(new Claim("refreshTokenID", refreshTokenID.ToString()));
+                var refreshToken = securityService.GenerateToken(identity);
+
+                await userService.SetRefreshTokenID(user.Username, refreshTokenID);
+
+                return new JsonResult(new { Token = token, RefreshToken = refreshToken });   
             }
             else
             {
@@ -67,7 +82,7 @@ namespace MLWSecurityService.Controllers
 
         [HttpGet]
         [Route("getToken")]
-        public IActionResult GetToken([FromHeader(Name = "Api-Key")]string apiKey)
+        public async Task<IActionResult> GetToken([FromHeader(Name = "Api-Key")]string apiKey)
         {
             if (string.IsNullOrEmpty(apiKey))
             {
@@ -93,9 +108,67 @@ namespace MLWSecurityService.Controllers
             return new JsonResult(new { Message = "Invalid or missing api-key." });
         }
 
-        public class ValidateTokenRequest
+        [HttpGet]
+        [Route("refreshToken")]
+        public async Task<IActionResult> RefreshToken([FromBody]ValidateTokenRequest request)
         {
-            public string Token { get; set; }
+            // Get rid of bearer if it is still there
+            string token = request.Token.Replace("Bearer ", "");
+
+            var validationParams = new TokenValidationParameters
+            {
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(config.GetValue<string>("Security:SigningKey"))),
+                RequireSignedTokens = true,
+                ValidateIssuer = true,
+                ValidIssuer = config.GetValue<string>("Security:Issuer"),
+                ValidateAudience = true,
+                ValidAudience = config.GetValue<string>("Security:Audience"),
+                RequireExpirationTime = true,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(5),
+            };
+
+            JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+
+            try
+            {
+                ClaimsPrincipal principal = handler.ValidateToken(token, validationParams, out SecurityToken validatedToken);
+                if (principal != null)
+                {
+                    ClaimsIdentity identity = principal.Identities.First();
+                    User user = await userService.Get(identity.FindFirst("username").Value);
+
+                    if (user.RefreshTokenID.ToString().Equals(identity.FindFirst("refreshTokenID").Value))
+                    {
+                        var newIdentity = new ClaimsIdentity();
+
+                        newIdentity.AddClaim(new Claim("username", user.Username));
+                        string newToken = securityService.GenerateToken(newIdentity);
+
+                        Guid refreshTokenID = Guid.NewGuid();
+                        newIdentity.AddClaim(new Claim("refreshTokenID", refreshTokenID.ToString()));
+                        var newRefreshToken = securityService.GenerateToken(newIdentity);
+
+                        await userService.SetRefreshTokenID(user.Username, refreshTokenID);
+
+                        return new JsonResult(new { Token = newToken, RefreshToken = newRefreshToken });
+                    } 
+                    else
+                    {
+                        return new BadRequestResult();
+                    }
+                }
+            }
+            catch (SecurityTokenValidationException)
+            {
+                return new BadRequestResult();
+            }
+            catch (ArgumentException)
+            {
+                return new BadRequestResult();
+            }
+
+            return new BadRequestResult();
         }
 
         [HttpPost]

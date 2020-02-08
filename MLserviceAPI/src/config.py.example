@@ -9,23 +9,27 @@
 # PROD - Production level
 # DEV - Development level (no security enforced)
 # DEV_SECURITY - Development level with security
-ENVIRONMNET = 'DEV'
+ENVIRONMNET = 'DEV_SECURITY'
 
 ADDITIONAL_DEBUGGING_SUPPORT = False
 
-MLWSECURITYSERVICE_URL = 'localhost:44373'
+MLWSECURITYSERVICE_URL = 'someurl.azurewebsites.net'
+MLWSECURITYSERVICE_PORT = 443
+
 INTERNAL_ERROR_MESSAGE = 'Something went wrong. Please try again later.'
 
-
-
 # Sentiment config
-BAG_OF_WORDS_SIZE = 500
+SENTIMENT_BAG_OF_WORDS_SIZE = 500
 SENTIMENT_SINGLE_THREAD_CUTOFF = 1000
 MAX_DATASET_SIZE = 50000
 TRAINING_SET_SIZE = 0.75
 
 # Category config
 KMAX = 10
+CATEGORY_BAG_OF_WORDS_SIZE = 2000
+
+# Stock config
+STOCK_SINGLE_THREAD_CUTOFF = 1000
 
 # CORS config
-ALLOWED_ORIGINS = ['http://localhost:8080']
+ALLOWED_ORIGINS = ['http://localhost:8080', 'https://localhost:8080']

@@ -1,18 +1,32 @@
 # Imports
 import services.logger as logger
 import services.model_service as model_service
+from services.model_service import Model
 import services.data_service as data_service
 import services.category_service as category_service
 import services.sentiment_service as sentiment_service
-import config
-
-from services.model_service import Model
-
-from multiprocessing import Pool
 
 from services.exception import ClassifierNotReadyError
 from services.exception import CleaningInProgressError
 from services.exception import TrainingInProgressError
+
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import cross_val_score
+
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import RandomForestClassifier
+
+from keras.layers import Dense
+from keras.optimizers import SGD
+
+from utility.ann import ANN
+from multiprocessing import Pool
+import config
+import time
+import pandas as pd
+from uuid import uuid4
 
 # Globals
 classifier_ready = False
@@ -36,13 +50,10 @@ if model_id is not None:
 # Begin stock functions --------------------------------------------------------------------------------------------------
 def clean_single(data):
 
-    sentiment = sentiment_service.predict_single(data['news'])
-    category = category_service.predict_single(data['news'])
-    
-    start_price = 0
-    end_price = 0
-    result = end_price - start_price
-    
+    sentiment = sentiment_service.predict_single(data['Body'])
+    category = category_service.predict_single_raw(data['Body'])
+    result = 1 if float(data['price_diff']) > 0 else 0
+
     return (sentiment, category, result)
 # end clean_single()
 
@@ -52,7 +63,18 @@ def clean(data):
     if is_cleaning == True:
         raise CleaningInProgressError()
 
-    clean_data = map(clean_single, data)
+    # Clean the text
+    if len(data) > config.STOCK_SINGLE_THREAD_CUTOFF:
+        logger.log('Cleaning text.')
+        is_cleaning = True
+
+        pool = Pool(processes=8)
+        clean_data = pool.map(clean_single, data)
+        
+        is_cleaning = False
+        logger.log('Cleaning complete.')
+    else:
+        clean_data = map(clean_single, data)
 
     return list(clean_data)
 # clean()
@@ -101,11 +123,90 @@ def train(dataset):
     is_training = True
     classifier_ready = False
 
+    df = pd.DataFrame(dataset.data, columns=['sentiment', 'category', 'result'])
 
+    X = df.iloc[:, :-1].values
+    y = df.iloc[:, -1].values
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=config.TRAINING_SET_SIZE)
+
+    logger.log('Fitting the model.')
+    start = time.time()
+
+    # logger.log('Finding the best parameters')
+
+    # parameters for KNeighborsClassifier
+    parameters = {
+        'n_neighbors': range(3, 20), # best: 9
+        'weights': ['uniform', 'distance'], # best: uniform
+        'metric': ['euclidean', 'minkowski', 'manhattan'], # best: euclidean
+        'p': range(1,5) # best: 1
+    }
+
+    # # parameters for RandomForestClassifier
+    # parameters = {
+    #     'n_estimators': [10, 50, 100], # best: 10
+    #     'criterion': ['gini', 'entropy'] # best: gini
+    # }
+
+    # grid_search = GridSearchCV(estimator = RandomForestClassifier(), 
+    #                         param_grid = parameters,
+    #                         scoring = 'accuracy',
+    #                         cv = 10,
+    #                         pre_dispatch=8,
+    #                         n_jobs=-1)
+
+    # grid_search = grid_search.fit(X, y)
+
+    # best_accuracy = grid_search.best_score_
+    # best_parameters = grid_search.best_params_
+    # logger.log(f'Best accuracy: {best_accuracy}\nBest Parameters: {best_parameters}\nTraining complete. In order to save model please re-run with the given parameters.')
+
+    # classifier = KNeighborsClassifier(n_neighbors = 9, metric = 'euclidean', p = 1, weights='uniform') # acc: 51.91% std_dev: 3.76%
+    # classifier = GaussianNB() # acc: 57.44% std_dev: 0.07%
+    classifier = RandomForestClassifier(n_estimators=10, criterion='gini', n_jobs=-1) # acc: 57.56% std_dev: 0.88%
+    
+    # ANN classifier acc: Error
+    # classifier = ANN('SEQUENTIAL', 10) 
+    # classifier.add(Dense(units=1, activation='softmax', input_dim=5))
+
+    # # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
+    # optimizer = 'adadelta' # Best: adadelta
+
+    # classifier.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+
+    classifier.fit(X_train, y_train)
+
+    end = time.time()
+    final = end - start
+    
+    logger.log(f'Fitting completed in {final}s')
+
+    logger.log('Determining accuracy.')
+
+    # Acc for statistical models
+    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train, cv=10, n_jobs=-1)
+    avg_accuracy = accuracies.mean() * 100
+    std_dev = accuracies.std() * 100
+
+    print('Saving results.')
+    model_info = {
+        '_id': str(uuid4()),
+        'model_type': MODEL_TYPE,
+        'has_vectorizor': False,
+        'has_encoders': False,
+        'is_current_model': True,
+        'acc': avg_accuracy,
+        'std_dev': std_dev,
+        'use_keras_save': False
+    }
+
+    model = Model(model_info, classifier, vectorizer)
+    model_service.save_model(model)
 
     is_training = False
     classifier_ready = True
-    logger.log(f'Training completed.')
+    logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
 # end train()
 
 def is_busy():

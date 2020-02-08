@@ -37,7 +37,7 @@ from uuid import uuid4
 classifier_ready = False
 is_training = False
 is_cleaning = False
-MODEL_TYPE = 'CATEGORY'
+MODEL_TYPE = 'STOCKV2'
 
 # Try to load the vectorizer & classfier
 classifier = None
@@ -55,10 +55,10 @@ if model_id is not None:
     classifier_ready = True
 # endif
 
-# Begin category functions --------------------------------------------------------------------------------------------------
+# Begin stockv2 functions --------------------------------------------------------------------------------------------------
 def clean_text_single(data):
-    text = data['text']
-    value = data['value']
+    text = data['Body']
+    value = 1 if float(data['price_diff']) > 0 else 0
 
     clean_text = re.sub('[^a-zA-Z]', ' ', text) # Replace all non letters with spaces
     clean_text = clean_text.lower() # Set the entire text to lower case
@@ -162,40 +162,24 @@ def train(dataset):
     is_training = True
     classifier_ready = False
 
-    text, values = zip(*dataset.data)
-
-    X_train, X_test, y_train, y_test = train_test_split(text, values, train_size=config.TRAINING_SET_SIZE)
-
-    logger.log('Encoding the data.')
-    label_encoder = LabelEncoder()
-    y_train_labeled = label_encoder.fit_transform(y_train)
-    y_test_labeled = label_encoder.transform(y_test)
-
-    one_hot_encoder = OneHotEncoder(drop='first', handle_unknown='error', categories='auto')
-    y_train_encoded = one_hot_encoder.fit_transform(y_train_labeled.reshape(-1, 1)).toarray()
-    y_test_encoded = one_hot_encoder.transform(y_test_labeled.reshape(-1, 1)).toarray()
+    X, y = zip(*dataset.data)
 
     logger.log('Vectorizing the data.')
-    # vectorizer = CountVectorizer(max_features=config.CATEGORY_BAG_OF_WORDS_SIZE)
-    vectorizer = TfidfVectorizer(max_features=config.CATEGORY_BAG_OF_WORDS_SIZE)
+    # vectorizer = CountVectorizer(max_features=config.STOCK_V2_BAG_OF_WORDS_SIZE)
+    vectorizer = TfidfVectorizer(max_features=config.STOCK_V2_BAG_OF_WORDS_SIZE)
 
-    X_train = vectorizer.fit_transform(X_train).toarray()
-    y_train = y_train_encoded
+    X = vectorizer.fit_transform(X).toarray()
 
-    num_categories = len(y_train[0])
-
-    X_test = vectorizer.transform(X_test).toarray()
-    y_test = y_test_encoded
-    # y_train = y_labeled # Note this is only for classifiers that do not support multilabel
+    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=config.TRAINING_SET_SIZE)
 
     logger.log('Fitting the model.')
     start = time.time()
 
-    # classifier = KNeighborsClassifier(n_neighbors = 3, metric = 'minkowski', p = 1, weights='distance') # acc: 44%, 25%
-    classifier = RandomForestClassifier(n_estimators=100, criterion='gini', n_jobs=-1) # acc: 64%, 96%
-    # classifier = GaussianNB() # acc: 30%, 3%
+    classifier = KNeighborsClassifier(n_neighbors = 3, metric = 'minkowski', p = 1, weights='distance') # acc: 
+    # classifier = RandomForestClassifier(n_estimators=100, criterion='gini', n_jobs=-1) # acc: 
+    # classifier = GaussianNB() # acc: 
 
-    # ANN classifier acc: 67%, 81%
+    # ANN classifier acc: 
     # classifier = ANN('SEQUENTIAL', 10) 
     # classifier.add(Dense(activation='relu', input_dim=config.CATEGORY_BAG_OF_WORDS_SIZE, units=250))
     # classifier.add(Dense(activation='softmax', units=num_categories))
@@ -246,7 +230,7 @@ def train(dataset):
     logger.log('Determining accuracy.')
 
     # Acc for statistical models
-    accuracies = cross_val_score(estimator=classifier, X=X_train, y=y_train_labeled, cv=10, n_jobs=-1)
+    accuracies = cross_val_score(estimator=classifier, X=X, y=y, cv=10, n_jobs=-1)
     avg_accuracy = accuracies.mean() * 100
     std_dev = accuracies.std() * 100
 
@@ -255,24 +239,26 @@ def train(dataset):
     # avg_accuracy = avg_accuracy * 100
     # std_dev = 0
 
-    print('Saving results.')
-    model_info = {
-        '_id': str(uuid4()),
-        'model_type': MODEL_TYPE,
-        'has_vectorizor': True,
-        'has_encoders': True,
-        'is_current_model': True,
-        'acc': avg_accuracy,
-        'std_dev': std_dev,
-        'use_keras_save': False
-    }
+    # print('Saving results.')
+    # model_info = {
+    #     '_id': str(uuid4()),
+    #     'model_type': MODEL_TYPE,
+    #     'has_vectorizor': True,
+    #     'has_encoders': True,
+    #     'is_current_model': True,
+    #     'acc': avg_accuracy,
+    #     'std_dev': std_dev,
+    #     'use_keras_save': False
+    # }
 
-    model = Model(model_info, classifier, vectorizer, label_encoder, one_hot_encoder)
-    model_service.save_model(model)
+    # model = Model(model_info, classifier, vectorizer, label_encoder, one_hot_encoder)
+    # model_service.save_model(model)
 
     is_training = False
     classifier_ready = True
     logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
+    logger.log('Debugger')
+#end train
     
 def is_busy():
     global is_cleaning

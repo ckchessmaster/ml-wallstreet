@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using System;
 
 namespace MLWSecurityService.Data
 {
@@ -19,5 +20,7 @@ namespace MLWSecurityService.Data
         public string Email { get; set; }
 
         public bool IsActive { get; set; }
+
+        public Guid RefreshTokenID { get; set; }
     }
 }

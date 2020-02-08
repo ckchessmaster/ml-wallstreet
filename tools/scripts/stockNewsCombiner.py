@@ -27,6 +27,9 @@ def map_stock_price(news_row, stock_data):
 news_data = pd.read_csv(news_data_location, encoding='windows-1252')
 stock_data = pd.read_csv(stock_data_location, encoding='windows-1252')
 
+# Drop duplicates
+news_data.drop_duplicates(subset='Url', keep='first', inplace=True)
+
 # Map stock prices
 news_data['price_diff'] = news_data.apply(map_stock_price, axis=1, args=(stock_data,))
 

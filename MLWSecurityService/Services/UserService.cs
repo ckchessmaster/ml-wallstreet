@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using MLWSecurityService.Data;
+using MongoDB.Bson;
 using MongoDB.Driver;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -39,6 +41,17 @@ namespace MLWSecurityService.Services
             };
 
             await users.InsertOneAsync(newUser, new InsertOneOptions());
+        }
+
+        public async Task SetRefreshTokenID(string username, Guid refreshTokenID)
+        {
+            var filter = Builders<User>.Filter
+                .Eq("Username", username);
+
+            var update = Builders<User>.Update
+                .Set("RefreshTokenID", refreshTokenID);
+
+            await users.UpdateOneAsync(filter, update);
         }
     }
 }

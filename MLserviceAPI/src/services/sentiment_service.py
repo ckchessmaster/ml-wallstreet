@@ -91,9 +91,9 @@ def predict_single(text):
     clean_data = clean_single({'text': text, 'value': None})
 
     vectorized_text = vectorizer.transform([clean_data[0]]).toarray()
-    predictions = classifier.predict(vectorized_text)
+    prediction = classifier.predict(vectorized_text)[0]
 
-    return predictions
+    return prediction
 # end predict()
 
 def train_clean(dataset_id):
