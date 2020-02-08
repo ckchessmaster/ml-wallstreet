@@ -52,8 +52,9 @@
 
 <script>
 import mlService from '../../../services/ml-service'
+import loginService from '../../../services/login-service'
 import csv from 'csvtojson'
-import { mapGetters } from 'vuex'
+import { mapGetters, mapActions } from 'vuex'
 
 export default {
     name: 'ModelHandler',
@@ -80,15 +81,21 @@ export default {
     }),
     computed: {
       ...mapGetters([
-        'token'
+        'token',
+        'isLoggedIn'
       ]),
       trainingReady() {
           return this.trainingSet !== null || (this.selectedTrainingSet !== null && this.selectedTrainingSet != 0)
       }
     },
     methods: {
+        ...mapActions(['logout']),
         async test() {
             if (this.testData !== '') {
+                if (!loginService.tryValidateCurrentToken()) {
+                    this.logout()
+                }
+
                 let result = await mlService.test(this.baseRoute, this.token, this.testData, this.modelType)
                 
                 if (result.status === 200) {
@@ -112,6 +119,10 @@ export default {
         },
         async train() {
             if (this.trainingReady === true) {
+                if (!loginService.tryValidateCurrentToken()) {
+                    this.logout()
+                }
+                
                 let result = {}
 
                 if (this.selectedTrainingSet !== null && this.selectedTrainingSet != 0) {
@@ -125,10 +136,11 @@ export default {
         }
     },
     async created() {
-        // TODO: Make this only fire when the user is logged in
         // Load the existing datasets
-        this.availableDataSets = await mlService.getDataSets(this.baseRoute, this.token, this.modelType)
-        this.modelInfo = await mlService.getCurrentModelInfo(this.baseRoute, this.token, this.modelType)
+        if (this.isLoggedIn) {
+            this.availableDataSets = await mlService.getDataSets(this.baseRoute, this.token, this.modelType)
+            this.modelInfo = await mlService.getCurrentModelInfo(this.baseRoute, this.token, this.modelType)
+        }
     }
 }
 </script>

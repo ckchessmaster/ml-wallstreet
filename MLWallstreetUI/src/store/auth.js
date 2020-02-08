@@ -17,8 +17,9 @@ const auth = {
         }
     },
     actions: {
-        login({ commit }, token) {
+        login({ commit }, token, refreshToken) {
             sessionStorage.setItem('token', token)
+            sessionStorage.setItem('refreshToken', refreshToken)
             commit('LOGIN');
         },
         logout({ commit }) {
@@ -41,6 +42,9 @@ const auth = {
         },
         token: () => {
             return sessionStorage.getItem('token')
+        },
+        refreshToken: () => {
+            return sessionStorage.getItem('refreshToken')
         }
     }
 }
