@@ -108,7 +108,7 @@ namespace MLWSecurityService.Controllers
             return new JsonResult(new { Message = "Invalid or missing api-key." });
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("refreshToken")]
         public async Task<IActionResult> RefreshToken([FromBody]ValidateTokenRequest request)
         {

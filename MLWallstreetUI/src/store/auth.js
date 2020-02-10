@@ -40,9 +40,6 @@ const auth = {
 
             return decoded_token.username
         },
-        token: () => {
-            return sessionStorage.getItem('token')
-        },
         refreshToken: () => {
             return sessionStorage.getItem('refreshToken')
         }

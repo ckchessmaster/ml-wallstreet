@@ -81,7 +81,6 @@ export default {
     }),
     computed: {
       ...mapGetters([
-        'token',
         'isLoggedIn'
       ]),
       trainingReady() {
@@ -96,7 +95,7 @@ export default {
                     this.logout()
                 }
 
-                let result = await mlService.test(this.baseRoute, this.token, this.testData, this.modelType)
+                let result = await mlService.test(this.baseRoute, this.testData, this.modelType)
                 
                 if (result.status === 200) {
                     this.testResult = result.result
@@ -126,9 +125,9 @@ export default {
                 let result = {}
 
                 if (this.selectedTrainingSet !== null && this.selectedTrainingSet != 0) {
-                    result = await mlService.trainExisting(this.baseRoute, this.token, this.selectedTrainingSet, this.modelType)
+                    result = await mlService.trainExisting(this.baseRoute, this.selectedTrainingSet, this.modelType)
                 } else {
-                    result = await mlService.trainNew(this.baseRoute, this.token, this.trainingSet, this.trainingSetInfo, this.modelType)
+                    result = await mlService.trainNew(this.baseRoute, this.trainingSet, this.trainingSetInfo, this.modelType)
                 }
                 
                 console.log(result)
@@ -138,8 +137,8 @@ export default {
     async created() {
         // Load the existing datasets
         if (this.isLoggedIn) {
-            this.availableDataSets = await mlService.getDataSets(this.baseRoute, this.token, this.modelType)
-            this.modelInfo = await mlService.getCurrentModelInfo(this.baseRoute, this.token, this.modelType)
+            this.availableDataSets = await mlService.getDataSets(this.baseRoute, this.modelType)
+            this.modelInfo = await mlService.getCurrentModelInfo(this.baseRoute, this.modelType)
         }
     }
 }

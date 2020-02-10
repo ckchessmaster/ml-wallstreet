@@ -58,7 +58,7 @@ const loginService = {
             // Get new tokens
             try {
                 var response = await axios({
-                    method: 'GET',
+                    method: 'POST',
                     url: config.security_service_base_url + 'auth/refreshToken',
                     data: {
                         token: currentRefreshToken
@@ -71,6 +71,8 @@ const loginService = {
                 return true
             } catch(e) {
                 if(e.response) {
+                    debugger
+                    console.log(e.response)
                     return { status: e.response.status }
                 }
                 

@@ -1,12 +1,12 @@
 import axios from 'axios'
 
 const mlService = {
-    async test (baseRoute, token, inputData, modelType) {
+    async test (baseRoute, inputData, modelType) {
         try {
             let response = await axios({
                 method: 'GET',
                 headers: {
-                    Authorization: 'Bearer ' + token
+                    Authorization: 'Bearer ' + sessionStorage.getItem('token')
                 },
                 url: baseRoute + 'models/' + modelType + '/predict',
                 params: {
@@ -23,7 +23,7 @@ const mlService = {
             return { status: 500 }
         }
     },
-    async trainNew(baseRoute, token, trainingSet, trainingSetInfo, modelType) {
+    async trainNew(baseRoute, trainingSet, trainingSetInfo, modelType) {
         let body = {
             name: trainingSetInfo.name,
             data: trainingSet
@@ -33,7 +33,7 @@ const mlService = {
             let response = await axios({
                 method: 'POST',
                 headers: {
-                    Authorization: 'Bearer ' + token
+                    Authorization: 'Bearer ' + sessionStorage.getItem('token')
                 },
                 url: baseRoute + 'models/' + modelType + '/train',
                 data: body
@@ -48,12 +48,12 @@ const mlService = {
             return { status: 500 }
         }
     },
-    async trainExisting(baseRoute, token, trainingSetId, modelType) {
+    async trainExisting(baseRoute, trainingSetId, modelType) {
         try {
             let response = await axios({
                 method: 'POST',
                 headers: {
-                    Authorization: 'Bearer ' + token
+                    Authorization: 'Bearer ' + sessionStorage.getItem('token')
                 },
                 url: baseRoute + 'models/' + modelType + '/train/' + trainingSetId
             })
@@ -67,12 +67,13 @@ const mlService = {
             return { status: 500 }
         }
     },
-    async getDataSets(baseRoute, token, modelType) {
+
+    async getDataSets(baseRoute, modelType) {
         try {
             let response = await axios({
                 method: 'GET',
                 headers: {
-                    Authorization: 'Bearer ' + token
+                    Authorization: 'Bearer ' + sessionStorage.getItem('token')
                 },
                 url: baseRoute + 'models/' + modelType + '/datasets'
             })
@@ -89,12 +90,12 @@ const mlService = {
             return { status: 500 }
         }
     },
-    async getCurrentModelInfo(baseRoute, token, modelType) {
+    async getCurrentModelInfo(baseRoute, modelType) {
         try {
             let response = await axios({
                 method: 'GET',
                 headers: {
-                    Authorization: 'Bearer ' + token
+                    Authorization: 'Bearer ' + sessionStorage.getItem('token')
                 },
                 url: baseRoute + 'models/' + modelType + '/current'
             })

@@ -8,13 +8,17 @@ import time
 import numpy as np
 
 from services.model_service import Model
+from utility.ann import ANN
+from multiprocessing import Pool
+from uuid import uuid4
+from itertools import chain
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.model_selection import cross_val_score
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder, OrdinalEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
@@ -31,10 +35,6 @@ from nltk.corpus import stopwords
 from services.exception import CleaningInProgressError
 from services.exception import TrainingInProgressError
 from services.exception import ClassifierNotReadyError
-from utility.ann import ANN
-
-from multiprocessing import Pool
-from uuid import uuid4
 
 # Globals
 classifier_ready = False
@@ -165,9 +165,9 @@ def build_ann():
 
 # end build_ann()
 
-def build_cnn():
+def build_cnn(max_len):
     classifier = ANN('SEQUENTIAL', 10) 
-    classifier.add(Embedding(config.STOCK_V2_MAX_WORD_VECTOR_SIZE, 32, input_length=config.STOCK_V2_MAX_WORD_VECTOR_SIZE)) # use bag of words size when applicable
+    classifier.add(Embedding(max_len, 32, input_length=max_len)) # use bag of words size when applicable
     classifier.add(Conv1D(32, 3, padding='same', activation='relu'))
     classifier.add(MaxPooling1D())
     classifier.add(Flatten())
@@ -223,6 +223,11 @@ def find_best_params(X, y):
     logger.log('Debug here')
 # end find_best_params()
 
+def max_length(array):
+    if(not isinstance(l, list)): return(0)
+    return(max([len(l),] + [len(subl) for subl in l if isinstance(subl, list)] + [max_length(subl) for subl in l]))
+# end max_length
+
 def train(dataset):
     global is_training
     global vectorizer
@@ -247,10 +252,16 @@ def train(dataset):
 
     # Note: This should only be used for Embedded models
     logger.log('Encoding the data.')
+    X = list(map(lambda text: text.split(), X))
+    
     label_encoder = LabelEncoder()
-    X = map(lambda text: text.split(), X)
-    X = label_encoder.fit_transform(X)
-    X = pad_sequences(X, maxlen=config.STOCK_V2_MAX_WORD_VECTOR_SIZE, padding='post', value=0.0)
+    unique_words = list(set(chain.from_iterable(X)))
+    label_encoder.fit(unique_words)
+    LabelEncoder()
+    X = list(map(lambda text: label_encoder.transform(text), X))
+
+    max_len = max_length(X)
+    X = pad_sequences(X, maxlen=max_len, padding='post', value=0.0)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=config.TRAINING_SET_SIZE)
     
@@ -261,7 +272,7 @@ def train(dataset):
     # classifier = RandomForestClassifier(n_estimators=1000, criterion='entropy', n_jobs=-1) # acc: 52.72% std_dev: 6.45%
     # classifier = GaussianNB() # acc: 49.51% std_dev: 5.78%
     # classifier = build_ann() # acc: Bag of Words - 55-60%
-    classifier = build_cnn() # acc: Bag of Words - 58.62%
+    classifier = build_cnn(max_len) # acc: Bag of Words - 58.62%
 
     classifier.fit(X_train, y_train)
 
@@ -283,20 +294,20 @@ def train(dataset):
     avg_accuracy = avg_accuracy * 100
     std_dev = 0
 
-    print('Saving results.')
-    model_info = {
-        '_id': str(uuid4()),
-        'model_type': MODEL_TYPE,
-        'has_vectorizor': True,
-        'has_encoders': False,
-        'is_current_model': True,
-        'acc': avg_accuracy,
-        'std_dev': std_dev,
-        'use_keras_save': True
-    }
+    # print('Saving results.')
+    # model_info = {
+    #     '_id': str(uuid4()),
+    #     'model_type': MODEL_TYPE,
+    #     'has_vectorizor': True,
+    #     'has_encoders': False,
+    #     'is_current_model': True,
+    #     'acc': avg_accuracy,
+    #     'std_dev': std_dev,
+    #     'use_keras_save': True
+    # }
 
-    model = Model(model_info, classifier, vectorizer)
-    model_service.save_model(model)
+    # model = Model(model_info, classifier, vectorizer)
+    # model_service.save_model(model)
 
     is_training = False
     classifier_ready = True
