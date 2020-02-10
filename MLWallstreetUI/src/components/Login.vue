@@ -71,7 +71,7 @@ export default {
               this.loading = false
 
               if (loginResult.status >= 200 && loginResult.status < 300) {
-                  this.saveLogin(loginResult.token, loginResult.refreshToken)
+                  this.saveLogin({token: loginResult.token, refreshToken: loginResult.refreshToken})
               } else if (loginResult.status >= 400 && loginResult.status < 500) {
                   this.invalidLoginCredentials = true
               } else if (loginResult.status >= 500) {

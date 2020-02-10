@@ -65,10 +65,10 @@ namespace MLWSecurityService.Controllers
                 var identity = new ClaimsIdentity();
                 identity.AddClaim(new Claim("username", user.Username));
                 
-                var token = securityService.GenerateToken(identity);
+                var token = securityService.GenerateToken(identity, SecurityService.TokenType.Access);
 
                 identity.AddClaim(new Claim("refreshTokenID", refreshTokenID.ToString()));
-                var refreshToken = securityService.GenerateToken(identity);
+                var refreshToken = securityService.GenerateToken(identity, SecurityService.TokenType.Refresh);
 
                 await userService.SetRefreshTokenID(user.Username, refreshTokenID);
 
@@ -102,7 +102,7 @@ namespace MLWSecurityService.Controllers
             {
                 var identity = new ClaimsIdentity();
 
-                return new JsonResult(new { Token = securityService.GenerateToken(identity) });
+                return new JsonResult(new { Token = securityService.GenerateToken(identity, SecurityService.TokenType.Access) });
             }
 
             return new JsonResult(new { Message = "Invalid or missing api-key." });
@@ -143,11 +143,11 @@ namespace MLWSecurityService.Controllers
                         var newIdentity = new ClaimsIdentity();
 
                         newIdentity.AddClaim(new Claim("username", user.Username));
-                        string newToken = securityService.GenerateToken(newIdentity);
+                        string newToken = securityService.GenerateToken(newIdentity, SecurityService.TokenType.Access);
 
                         Guid refreshTokenID = Guid.NewGuid();
                         newIdentity.AddClaim(new Claim("refreshTokenID", refreshTokenID.ToString()));
-                        var newRefreshToken = securityService.GenerateToken(newIdentity);
+                        var newRefreshToken = securityService.GenerateToken(newIdentity, SecurityService.TokenType.Refresh);
 
                         await userService.SetRefreshTokenID(user.Username, refreshTokenID);
 

@@ -14,6 +14,12 @@ namespace MLWSecurityService.Services
 {
     public class SecurityService
     {
+        public enum TokenType
+        {
+            Access,
+            Refresh
+        }
+
         private readonly string signingKey;
         private readonly string issuer;
         private readonly string audience;
@@ -65,19 +71,23 @@ namespace MLWSecurityService.Services
             };
         }
 
-        public string GenerateToken(ClaimsIdentity identity)
+        public string GenerateToken(ClaimsIdentity identity, TokenType tokenType)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(signingKey);
 
             DateTime issuedAt = DateTime.UtcNow;
 
+            var expiration = tokenType == TokenType.Access
+                ? DateTime.UtcNow.AddMinutes(15)
+                : DateTime.UtcNow.AddHours(24);
+
             var token = tokenHandler.CreateJwtSecurityToken(
                 issuer: issuer,
                 audience: audience,
                 subject: identity,
                 notBefore: issuedAt,
-                expires: DateTime.UtcNow.AddMinutes(15),
+                expires: expiration,
                 issuedAt: issuedAt,
                 signingCredentials: new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature));
 

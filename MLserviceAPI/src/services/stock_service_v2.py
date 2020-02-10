@@ -19,6 +19,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 
+from keras.preprocessing.sequence import pad_sequences
 from keras.optimizers import SGD, RMSprop
 from keras.layers import Dense, Flatten
 from keras.layers.convolutional import Conv1D, MaxPooling1D
@@ -58,46 +59,6 @@ if model_id is not None:
 # endif
 
 # Begin stockv2 functions --------------------------------------------------------------------------------------------------
-def find_best_params(X, y):
-    logger.log('Finding the best parameters')
-
-    # parameters for KNeighborsClassifier
-    # parameters = {
-    #     'n_neighbors': range(3, 20), # best: 16
-    #     'weights': ['uniform', 'distance'], # best: distance
-    #     'metric': ['euclidean', 'minkowski', 'manhattan'], # best: minkowski
-    #     'p': range(1,5) # best: 1
-    # }
-
-    # parameters for RandomForestClassifier
-    # parameters = {
-    #     'n_estimators': [1, 5, 10, 100, 250, 500], # best: 500
-    #     'criterion': ['gini', 'entropy'] # best: entropy
-    # }
-
-    parameters = {
-        'n_estimators': [500, 750, 1000, 2000], # best: 500
-        'criterion': ['entropy'] # best: entropy
-    }
-
-    start = time.time()
-    grid_search = GridSearchCV(estimator = RandomForestClassifier(), 
-                            param_grid = parameters,
-                            scoring = 'accuracy',
-                            cv = 10,
-                            pre_dispatch=8,
-                            n_jobs=-1)
-
-    grid_search = grid_search.fit(X, y)
-    end = time.time()
-    final_time = end - start
-
-    best_accuracy = grid_search.best_score_
-    best_parameters = grid_search.best_params_
-    logger.log(f'Best accuracy: {best_accuracy}\nBest Parameters: {best_parameters}\nTraining complete. In order to save model please re-run with the given parameters.')
-    logger.log('Debug here')
-# end find_best_params()
-
 def clean_text_single(data):
     text = data['Body']
     value = 1 if float(data['price_diff']) > 0 else 0
@@ -205,12 +166,11 @@ def build_ann():
 # end build_ann()
 
 def build_cnn():
-    classifier = ANN('SEQUENTIAL', 50) 
-    classifier.add(Embedding(5000, 32, input_length=config.STOCK_V2_BAG_OF_WORDS_SIZE))
+    classifier = ANN('SEQUENTIAL', 10) 
+    classifier.add(Embedding(config.STOCK_V2_MAX_WORD_VECTOR_SIZE, 32, input_length=config.STOCK_V2_MAX_WORD_VECTOR_SIZE)) # use bag of words size when applicable
     classifier.add(Conv1D(32, 3, padding='same', activation='relu'))
     classifier.add(MaxPooling1D())
     classifier.add(Flatten())
-    classifier.add(Dense(500, activation='relu'))
     classifier.add(Dense(250, activation='relu'))
     classifier.add(Dense(1, activation='sigmoid'))
     classifier.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -222,6 +182,46 @@ def build_cnn():
 
     return classifier
 # end build_cnn()
+
+def find_best_params(X, y):
+    logger.log('Finding the best parameters')
+
+    # parameters for KNeighborsClassifier
+    # parameters = {
+    #     'n_neighbors': range(3, 20), # best: 16
+    #     'weights': ['uniform', 'distance'], # best: distance
+    #     'metric': ['euclidean', 'minkowski', 'manhattan'], # best: minkowski
+    #     'p': range(1,5) # best: 1
+    # }
+
+    # parameters for RandomForestClassifier
+    # parameters = {
+    #     'n_estimators': [1, 5, 10, 100, 250, 500], # best: 500
+    #     'criterion': ['gini', 'entropy'] # best: entropy
+    # }
+
+    parameters = {
+        'n_estimators': [500, 750, 1000, 2000], # best: 500
+        'criterion': ['entropy'] # best: entropy
+    }
+
+    start = time.time()
+    grid_search = GridSearchCV(estimator = RandomForestClassifier(), 
+                            param_grid = parameters,
+                            scoring = 'accuracy',
+                            cv = 10,
+                            pre_dispatch=8,
+                            n_jobs=-1)
+
+    grid_search = grid_search.fit(X, y)
+    end = time.time()
+    final_time = end - start
+
+    best_accuracy = grid_search.best_score_
+    best_parameters = grid_search.best_params_
+    logger.log(f'Best accuracy: {best_accuracy}\nBest Parameters: {best_parameters}\nTraining complete. In order to save model please re-run with the given parameters.')
+    logger.log('Debug here')
+# end find_best_params()
 
 def train(dataset):
     global is_training
@@ -240,22 +240,28 @@ def train(dataset):
 
     X, y = zip(*dataset.data)
 
-    logger.log('Vectorizing the data.')
-    # vectorizer = CountVectorizer(max_features=config.STOCK_V2_BAG_OF_WORDS_SIZE)
-    vectorizer = TfidfVectorizer(max_features=config.STOCK_V2_BAG_OF_WORDS_SIZE)
+    # Note: This should only be used for Bag of Words Models
+    # logger.log('Vectorizing the data.') 
+    # vectorizer = TfidfVectorizer(max_features=config.STOCK_V2_BAG_OF_WORDS_SIZE)
+    # X = vectorizer.fit_transform(X).toarray()
 
-    X = vectorizer.fit_transform(X).toarray()
+    # Note: This should only be used for Embedded models
+    logger.log('Encoding the data.')
+    label_encoder = LabelEncoder()
+    X = map(lambda text: text.split(), X)
+    X = label_encoder.fit_transform(X)
+    X = pad_sequences(X, maxlen=config.STOCK_V2_MAX_WORD_VECTOR_SIZE, padding='post', value=0.0)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=config.TRAINING_SET_SIZE)
-
+    
     logger.log('Fitting the model.')
     start = time.time()
 
     # classifier = KNeighborsClassifier(n_neighbors = 16, metric = 'minkowski', p = 1, weights='distance') # acc: 57.37% std_dev: 2.87%
     # classifier = RandomForestClassifier(n_estimators=1000, criterion='entropy', n_jobs=-1) # acc: 52.72% std_dev: 6.45%
     # classifier = GaussianNB() # acc: 49.51% std_dev: 5.78%
-    # classifier = build_ann() # acc: 55-60%
-    classifier = build_cnn() # acc: 58.62%
+    # classifier = build_ann() # acc: Bag of Words - 55-60%
+    classifier = build_cnn() # acc: Bag of Words - 58.62%
 
     classifier.fit(X_train, y_train)
 
