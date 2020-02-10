@@ -165,9 +165,9 @@ def build_ann():
 
 # end build_ann()
 
-def build_cnn(max_len):
+def build_cnn(max_len, num_words):
     classifier = ANN('SEQUENTIAL', 10) 
-    classifier.add(Embedding(max_len, 32, input_length=max_len)) # use bag of words size when applicable
+    classifier.add(Embedding(input_dim=num_words, output_dim=32, input_length=max_len)) # use bag of words size when applicable
     classifier.add(Conv1D(32, 3, padding='same', activation='relu'))
     classifier.add(MaxPooling1D())
     classifier.add(Flatten())
@@ -224,8 +224,8 @@ def find_best_params(X, y):
 # end find_best_params()
 
 def max_length(array):
-    if(not isinstance(l, list)): return(0)
-    return(max([len(l),] + [len(subl) for subl in l if isinstance(subl, list)] + [max_length(subl) for subl in l]))
+    if(not isinstance(array, list)): return(0)
+    return(max([len(array),] + [len(subl) for subl in array if isinstance(subl, list)] + [max_length(subl) for subl in array]))
 # end max_length
 
 def train(dataset):
@@ -260,8 +260,9 @@ def train(dataset):
     LabelEncoder()
     X = list(map(lambda text: label_encoder.transform(text), X))
 
-    max_len = max_length(X)
-    X = pad_sequences(X, maxlen=max_len, padding='post', value=0.0)
+    max_doc_len = max_length(X)
+    num_words = len(unique_words)
+    X = pad_sequences(X, maxlen=max_doc_len, padding='post', value=0.0)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=config.TRAINING_SET_SIZE)
     
@@ -272,7 +273,7 @@ def train(dataset):
     # classifier = RandomForestClassifier(n_estimators=1000, criterion='entropy', n_jobs=-1) # acc: 52.72% std_dev: 6.45%
     # classifier = GaussianNB() # acc: 49.51% std_dev: 5.78%
     # classifier = build_ann() # acc: Bag of Words - 55-60%
-    classifier = build_cnn(max_len) # acc: Bag of Words - 58.62%
+    classifier = build_cnn(max_doc_len, num_words) # acc: Bag of Words - 58.62%
 
     classifier.fit(X_train, y_train)
 
