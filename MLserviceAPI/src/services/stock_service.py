@@ -48,6 +48,46 @@ if model_id is not None:
 # endif
 
 # Begin stock functions --------------------------------------------------------------------------------------------------
+def find_best_params(X, y):
+    logger.log('Finding the best parameters')
+
+    # parameters for KNeighborsClassifier
+    # parameters = {
+    #     'n_neighbors': range(3, 20), # best: 16
+    #     'weights': ['uniform', 'distance'], # best: distance
+    #     'metric': ['euclidean', 'minkowski', 'manhattan'], # best: minkowski
+    #     'p': range(1,5) # best: 1
+    # }
+
+    # parameters for RandomForestClassifier
+    # parameters = {
+    #     'n_estimators': [1, 5, 10, 100, 250, 500], # best: 500
+    #     'criterion': ['gini', 'entropy'] # best: entropy
+    # }
+
+    parameters = {
+        'n_estimators': [500, 750, 1000, 2000], # best: 500
+        'criterion': ['entropy'] # best: entropy
+    }
+
+    start = time.time()
+    grid_search = GridSearchCV(estimator = RandomForestClassifier(), 
+                            param_grid = parameters,
+                            scoring = 'accuracy',
+                            cv = 10,
+                            pre_dispatch=8,
+                            n_jobs=-1)
+
+    grid_search = grid_search.fit(X, y)
+    end = time.time()
+    final_time = end - start
+
+    best_accuracy = grid_search.best_score_
+    best_parameters = grid_search.best_params_
+    logger.log(f'Best accuracy: {best_accuracy}\nBest Parameters: {best_parameters}\nTraining complete. In order to save model please re-run with the given parameters.')
+    logger.log('Debug here')
+# end find_best_params()
+
 def clean_single(data):
 
     sentiment = sentiment_service.predict_single(data['Body'])
@@ -110,6 +150,19 @@ def train_dirty(dataset):
     train(dataset)
 # end train_dirty()
 
+def build_ann():
+    classifier = ANN('SEQUENTIAL', 10) 
+    classifier.add(Dense(units=2, activation='relu', input_dim=2))
+    classifier.add(Dense(units=1, activation='sigmoid'))
+
+    # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
+    optimizer = 'nadam' # Best: nadam
+
+    classifier.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+
+    return classifier
+# end build_ann()
+
 def train(dataset):
     global is_training
     global vectorizer
@@ -133,47 +186,12 @@ def train(dataset):
     logger.log('Fitting the model.')
     start = time.time()
 
-    # logger.log('Finding the best parameters')
-
-    # parameters for KNeighborsClassifier
-    parameters = {
-        'n_neighbors': range(3, 20), # best: 9
-        'weights': ['uniform', 'distance'], # best: uniform
-        'metric': ['euclidean', 'minkowski', 'manhattan'], # best: euclidean
-        'p': range(1,5) # best: 1
-    }
-
-    # # parameters for RandomForestClassifier
-    # parameters = {
-    #     'n_estimators': [10, 50, 100], # best: 10
-    #     'criterion': ['gini', 'entropy'] # best: gini
-    # }
-
-    # grid_search = GridSearchCV(estimator = RandomForestClassifier(), 
-    #                         param_grid = parameters,
-    #                         scoring = 'accuracy',
-    #                         cv = 10,
-    #                         pre_dispatch=8,
-    #                         n_jobs=-1)
-
-    # grid_search = grid_search.fit(X, y)
-
-    # best_accuracy = grid_search.best_score_
-    # best_parameters = grid_search.best_params_
-    # logger.log(f'Best accuracy: {best_accuracy}\nBest Parameters: {best_parameters}\nTraining complete. In order to save model please re-run with the given parameters.')
+    # find_best_params(X, y)
 
     # classifier = KNeighborsClassifier(n_neighbors = 9, metric = 'euclidean', p = 1, weights='uniform') # acc: 51.91% std_dev: 3.76%
     # classifier = GaussianNB() # acc: 57.44% std_dev: 0.07%
     classifier = RandomForestClassifier(n_estimators=10, criterion='gini', n_jobs=-1) # acc: 57.56% std_dev: 0.88%
-    
-    # ANN classifier acc: Error
-    # classifier = ANN('SEQUENTIAL', 10) 
-    # classifier.add(Dense(units=1, activation='softmax', input_dim=5))
-
-    # # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
-    # optimizer = 'adadelta' # Best: adadelta
-
-    # classifier.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+    # classifier = build_ann() # acc: 56.79% 
 
     classifier.fit(X_train, y_train)
 
@@ -189,11 +207,16 @@ def train(dataset):
     avg_accuracy = accuracies.mean() * 100
     std_dev = accuracies.std() * 100
 
+    # Acc for ANN:
+    # avg_accuracy = classifier.evaluate(X_test, y_test)
+    # avg_accuracy = avg_accuracy * 100
+    # std_dev = 0
+
     print('Saving results.')
     model_info = {
         '_id': str(uuid4()),
         'model_type': MODEL_TYPE,
-        'has_vectorizor': False,
+        'has_vectorizor': True,
         'has_encoders': False,
         'is_current_model': True,
         'acc': avg_accuracy,
@@ -207,6 +230,7 @@ def train(dataset):
     is_training = False
     classifier_ready = True
     logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
+    logger.log('Debug')
 # end train()
 
 def is_busy():
