@@ -11,12 +11,15 @@
 # DEV_SECURITY - Development level with security
 ENVIRONMNET = 'DEV_SECURITY'
 
-ADDITIONAL_DEBUGGING_SUPPORT = False
+ADDITIONAL_DEBUGGING_SUPPORT = True
 
-MLWSECURITYSERVICE_URL = 'someurl.azurewebsites.net'
+MLWSECURITYSERVICE_URL = '<security_service_url>'
 MLWSECURITYSERVICE_PORT = 443
 
 INTERNAL_ERROR_MESSAGE = 'Something went wrong. Please try again later.'
+
+# Mongo
+MONGO_CONNECTION_STRING = '<your_connection_string>'
 
 # Sentiment config
 SENTIMENT_BAG_OF_WORDS_SIZE = 500
@@ -30,6 +33,10 @@ CATEGORY_BAG_OF_WORDS_SIZE = 2000
 
 # Stock config
 STOCK_SINGLE_THREAD_CUTOFF = 1000
+
+# Stock v2 config
+STOCK_V2_SINGLE_THREAD_CUTOFF = 1000
+STOCK_V2_BAG_OF_WORDS_SIZE = 500
 
 # CORS config
 ALLOWED_ORIGINS = ['http://localhost:8080', 'https://localhost:8080']

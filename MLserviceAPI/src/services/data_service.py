@@ -1,6 +1,7 @@
 import pickle
 import os
 import os.path as path
+import config
 
 from pymongo import MongoClient
 
@@ -10,7 +11,7 @@ class Dataset():
         self.data = data
 # end Datset
 
-collection = MongoClient().MLService.datasets
+collection = MongoClient(config.MONGO_CONNECTION_STRING).MLService.datasets
 
 def get_datasets(model_type):
     datasets = collection.find({'model_type': model_type}, {'_id': 1, 'name': 1})

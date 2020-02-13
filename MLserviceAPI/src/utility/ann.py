@@ -7,10 +7,11 @@ import tensorflow as tf
 import services.logger as logger
 
 class ANN:
-    def __init__(self, ann_type='NONE', epochs=10):
+    def __init__(self, ann_type='NONE', epochs=10, batch_size=100):
         self.session = tf.compat.v1.Session()
         self.graph = tf.compat.v1.get_default_graph()
         self.epochs = epochs
+        self.batch_size = batch_size
 
         # disable tensorflow warnings
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
@@ -70,7 +71,7 @@ class ANN:
     def fit(self, X, y):
         with self.graph.as_default():
             with self.session.as_default():
-                self.model.fit(X, y, batch_size=10, epochs=self.epochs)
+                self.model.fit(X, y, batch_size=self.batch_size, epochs=self.epochs)
     # end fit
 
     def predict(self, X):

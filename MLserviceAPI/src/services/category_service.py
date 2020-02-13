@@ -210,7 +210,7 @@ def train(dataset):
     end = time.time()
     final = end - start
     
-    logger.log(f'Fitting completed in {final}s')
+    logger.log('Fitting completed in ' + final + 's')
     
     # logger.log('Finding the best parameters')
 
@@ -272,7 +272,7 @@ def train(dataset):
 
     is_training = False
     classifier_ready = True
-    logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
+    logger.log('Training completed.\nResults:\nAverage: ' + avg_accuracy + '\nStandard Deviation: ' + std_dev)
     
 def is_busy():
     global is_cleaning

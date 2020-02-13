@@ -11,7 +11,6 @@ from services.model_service import Model
 from utility.ann import ANN
 from multiprocessing import Pool
 from uuid import uuid4
-from itertools import chain
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.cluster import KMeans
@@ -24,8 +23,9 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 
 from keras.preprocessing.sequence import pad_sequences
-from keras.optimizers import SGD, RMSprop
-from keras.layers import Dense, Flatten
+from keras.preprocessing.text import Tokenizer, one_hot
+from keras.optimizers import SGD, RMSprop, Adam
+from keras.layers import Dense, Flatten, LSTM
 from keras.layers.convolutional import Conv1D, MaxPooling1D
 from keras.layers.embeddings import Embedding
 
@@ -45,6 +45,8 @@ MODEL_TYPE = 'STOCKV2'
 # Try to load the vectorizer & classfier
 classifier = None
 vectorizer = None
+label_encoder = None
+one_hot_encoder = None
 
 model_id = model_service.find_current_model_by_model_type(MODEL_TYPE)
 if model_id is not None:
@@ -150,8 +152,8 @@ def train_dirty(dataset):
     train(dataset)
 # end train_dirty()
 
-def build_ann():
-    classifier = ANN('SEQUENTIAL', 10) 
+def build_ann(epochs, batch_size):
+    classifier = ANN('SEQUENTIAL', epochs, batch_size) 
     classifier.add(Dense(units=500, activation='relu', input_dim=config.STOCK_V2_BAG_OF_WORDS_SIZE))
     classifier.add(Dense(units=250, activation='relu'))
     classifier.add(Dense(units=1, activation='sigmoid'))
@@ -173,7 +175,7 @@ def build_cnn(max_len, num_words):
     classifier.add(Flatten())
     classifier.add(Dense(250, activation='relu'))
     classifier.add(Dense(1, activation='sigmoid'))
-    classifier.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    classifier.compile(loss='binary_crossentropy', optimizer=Adam(lr=0.001), metrics=['accuracy'])
 
     # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
     optimizer = 'adam' # Best: all about the same
@@ -182,6 +184,20 @@ def build_cnn(max_len, num_words):
 
     return classifier
 # end build_cnn()
+    
+def build_lstm(sequence_length, n_words, batch_size=100):
+    units1, units2 = int(n_words/4), int(n_words/8)
+
+    classifier = ANN('SEQUENTIAL', epochs=10, batch_size=batch_size) 
+    classifier.add(Embedding(input_dim=n_words, output_dim=units1, input_length=sequence_length, trainable=True)) # Embed the text sequences
+    classifier.add(LSTM(units=units2, return_sequences=False))
+    classifier.add(Dense(units=1, activation='sigmoid'))
+
+    # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
+    classifier.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+    return classifier
+# end build_ltsm()
 
 def find_best_params(X, y):
     logger.log('Finding the best parameters')
@@ -219,7 +235,7 @@ def find_best_params(X, y):
 
     best_accuracy = grid_search.best_score_
     best_parameters = grid_search.best_params_
-    logger.log(f'Best accuracy: {best_accuracy}\nBest Parameters: {best_parameters}\nTraining complete. In order to save model please re-run with the given parameters.')
+    logger.log('Best accuracy: ' + best_accuracy + '\nBest Parameters: ' + best_parameters + '\nTraining complete. In order to save model please re-run with the given parameters.')
     logger.log('Debug here')
 # end find_best_params()
 
@@ -252,17 +268,15 @@ def train(dataset):
 
     # Note: This should only be used for Embedded models
     logger.log('Encoding the data.')
-    X = list(map(lambda text: text.split(), X))
-    
-    label_encoder = LabelEncoder()
-    unique_words = list(set(chain.from_iterable(X)))
-    label_encoder.fit(unique_words)
-    LabelEncoder()
-    X = list(map(lambda text: label_encoder.transform(text), X))
+    tokenizer = Tokenizer(num_words=config.STOCK_V2_BAG_OF_WORDS_SIZE)
+    tokenizer.fit_on_texts(X)
+    X = np.array([np.array(xi) for xi in tokenizer.texts_to_sequences(X)])
+    X = pad_sequences(X, padding='post', value=0)
+    sequence_length = len(X[0])
+    n_words = len(tokenizer.word_index)
 
-    max_doc_len = max_length(X)
-    num_words = len(unique_words)
-    X = pad_sequences(X, maxlen=max_doc_len, padding='post', value=0.0)
+    # Reduce the size of the array
+    X = X.astype('uint16')
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=config.TRAINING_SET_SIZE)
     
@@ -272,14 +286,15 @@ def train(dataset):
     # classifier = KNeighborsClassifier(n_neighbors = 16, metric = 'minkowski', p = 1, weights='distance') # acc: 57.37% std_dev: 2.87%
     # classifier = RandomForestClassifier(n_estimators=1000, criterion='entropy', n_jobs=-1) # acc: 52.72% std_dev: 6.45%
     # classifier = GaussianNB() # acc: 49.51% std_dev: 5.78%
-    # classifier = build_ann() # acc: Bag of Words - 55-60%
-    classifier = build_cnn(max_doc_len, num_words) # acc: Bag of Words - 58.62%
+    # classifier = build_ann(epochs=10, batch_size=len(X_train)) # acc: Bag of Words - 55-60%
+    # classifier = build_cnn() # acc: Bag of Words - 58.62%
+    classifier = build_lstm(sequence_length, n_words, batch_size=int(len(X_train) / 8)) # acc: 
 
     classifier.fit(X_train, y_train)
 
     end = time.time()
     final = end - start
-    logger.log(f'Fitting completed in {final}s')
+    logger.log('Fitting completed in ' + str(final) + 's')
     
     # find_best_params(X, y)
 
@@ -295,24 +310,25 @@ def train(dataset):
     avg_accuracy = avg_accuracy * 100
     std_dev = 0
 
-    # print('Saving results.')
-    # model_info = {
-    #     '_id': str(uuid4()),
-    #     'model_type': MODEL_TYPE,
-    #     'has_vectorizor': True,
-    #     'has_encoders': False,
-    #     'is_current_model': True,
-    #     'acc': avg_accuracy,
-    #     'std_dev': std_dev,
-    #     'use_keras_save': True
-    # }
+    print('Saving results.')
+    model_info = {
+        '_id': str(uuid4()),
+        'model_type': MODEL_TYPE,
+        'has_vectorizor': True,
+        'has_encoders': True,
+        'is_current_model': True,
+        'acc': avg_accuracy,
+        'std_dev': std_dev,
+        'use_keras_save': True
+    }
 
-    # model = Model(model_info, classifier, vectorizer)
-    # model_service.save_model(model)
+    model = Model(model_info, classifier, vectorizor=None, tokenizer=tokenizer)
+    model_service.save_model(model)
 
     is_training = False
     classifier_ready = True
-    logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
+    logger.log('Training completed.\nResults:\nAverage: ' + str(avg_accuracy) + '\nStandard Deviation: ' + str(std_dev))
+
     logger.log('Debugger')
 #end train()
     

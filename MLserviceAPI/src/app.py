@@ -3,6 +3,11 @@
 # Set the working directory before we do anything else
 import os
 os.chdir(os.path.dirname(__file__) + '/..')
+# os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
+# os.environ["PLAIDML_USE_STRIPE"] = "1"
+
+import nltk
+nltk.download('stopwords')
 
 # Imports
 import services.logger as logger
@@ -27,4 +32,4 @@ CORS(app, origins=config.ALLOWED_ORIGINS, supports_credentials=True)
 
 # Run the app
 if __name__ == '__main__':
-    app.run()
+    app.run(host='127.0.0.1')

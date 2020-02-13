@@ -16,7 +16,7 @@ class AuthMiddleware(object):
         request_uri = environ['REQUEST_URI']
         remote_addr = environ['REMOTE_ADDR']
 
-        return (f'Invalid access attempt! REQUEST_METHOD: {request_method}, REQUEST_URI: {request_uri}, REMOTE_ADDR: {remote_addr}')
+        return ('Invalid access attempt! REQUEST_METHOD: ' + request_method + ', REQUEST_URI: ' + request_uri + ', REMOTE_ADDR: ' + remote_addr)
 
     def __call__(self, environ, start_response):
         # If we are in a dev environment don't worry about security
@@ -26,7 +26,7 @@ class AuthMiddleware(object):
 
         # The health route is the only route which does not need authentication
         if environ['PATH_INFO'].startswith('/api/health'):
-            return self.flask(environ, start_response)
+            return self.app(environ, start_response)
         
         # TODO: mabye make this configurable? Or just rely on the requested content type.
         content_type = 'application/json'

@@ -24,7 +24,7 @@ const loginService = {
                 return { status: e.response.status }
             }
             
-            console.log(e)
+            //console.log(e)
             return { status: 500 }
         }
     },
@@ -71,13 +71,12 @@ const loginService = {
                 return true
             } catch(e) {
                 if(e.response) {
-                    debugger
-                    console.log(e.response)
+                    //console.log(e.response)
                     return { status: e.response.status }
                 }
                 
                 // Logout
-                console.log(e)
+                //console.log(e)
                 return false
             }
         }

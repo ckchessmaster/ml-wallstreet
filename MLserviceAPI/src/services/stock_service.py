@@ -84,7 +84,7 @@ def find_best_params(X, y):
 
     best_accuracy = grid_search.best_score_
     best_parameters = grid_search.best_params_
-    logger.log(f'Best accuracy: {best_accuracy}\nBest Parameters: {best_parameters}\nTraining complete. In order to save model please re-run with the given parameters.')
+    logger.log('Best accuracy: ' + best_accuracy + '\nBest Parameters: ' + best_parameters + '\nTraining complete. In order to save model please re-run with the given parameters.')
     logger.log('Debug here')
 # end find_best_params()
 
@@ -198,7 +198,7 @@ def train(dataset):
     end = time.time()
     final = end - start
     
-    logger.log(f'Fitting completed in {final}s')
+    logger.log('Fitting completed in ' + final + 's')
 
     logger.log('Determining accuracy.')
 
@@ -229,7 +229,7 @@ def train(dataset):
 
     is_training = False
     classifier_ready = True
-    logger.log(f'Training completed.\nResults:\nAverage: {avg_accuracy}\nStandard Deviation: {std_dev}')
+    logger.log('Training completed.\nResults:\nAverage: ' + avg_accuracy + '\nStandard Deviation: ' + std_dev)
     logger.log('Debug')
 # end train()
 

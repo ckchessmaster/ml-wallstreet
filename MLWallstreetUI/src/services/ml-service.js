@@ -19,7 +19,7 @@ const mlService = {
                 result: response.data.Result
             }
         } catch (e) {
-            console.error(e)
+            //console.error(e)
             return { status: 500 }
         }
     },
@@ -44,7 +44,7 @@ const mlService = {
                 result: response.data
             }
         } catch (e) {
-            console.error(e)
+            //console.error(e)
             return { status: 500 }
         }
     },
@@ -63,7 +63,7 @@ const mlService = {
                 result: response.data
             }
         } catch (e) {
-            console.error(e)
+            //console.error(e)
             return { status: 500 }
         }
     },
@@ -86,7 +86,7 @@ const mlService = {
 
             return datasets
         } catch (e) {
-            console.error(e)
+            //console.error(e)
             return { status: 500 }
         }
     },
@@ -104,7 +104,7 @@ const mlService = {
 
             return model
         } catch (e) {
-            console.error(e)
+            //console.error(e)
             return { status: 500 }
         }
     }
