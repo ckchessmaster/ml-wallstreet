@@ -5,9 +5,8 @@ import config
 
 from pymongo import MongoClient
 from collections import namedtuple
-from keras.models import load_model
 
-from utility.ann import ANN
+from utility.ann import NeuralNetwork
 
 class Model():
     def __init__(self, info, predictor, vectorizor=None, label_encoder=None, one_hot_encoder=None, tokenizer=None):
@@ -33,7 +32,7 @@ def get_model(model_id):
         return None
 
     if 'use_keras_save' in model_info and model_info['use_keras_save'] == True:
-        model = ANN()
+        model = NeuralNetwork()
         model.load('models/' + model_id + '.mdl')
     else:
         model = pickle.load(open('models/' + model_id + '.mdl', 'rb'))

@@ -6,7 +6,7 @@ from keras import backend as K
 import tensorflow as tf
 import services.logger as logger
 
-class ANN:
+class NeuralNetwork:
     def __init__(self, ann_type='NONE', epochs=10, batch_size=100):
         self.session = tf.compat.v1.Session()
         self.graph = tf.compat.v1.get_default_graph()

@@ -21,7 +21,7 @@ from sklearn.ensemble import RandomForestClassifier
 from keras.layers import Dense
 from keras.optimizers import SGD
 
-from utility.ann import ANN
+from utility.ann import NeuralNetwork
 from multiprocessing import Pool
 import config
 import time
@@ -151,7 +151,7 @@ def train_dirty(dataset):
 # end train_dirty()
 
 def build_ann():
-    classifier = ANN('SEQUENTIAL', 10) 
+    classifier = NeuralNetwork'SEQUENTIAL', 10) 
     classifier.add(Dense(units=2, activation='relu', input_dim=2))
     classifier.add(Dense(units=1, activation='sigmoid'))
 

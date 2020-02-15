@@ -1,14 +1,16 @@
 # Imports
 import re
 import config
-import services.logger as logger
-import services.model_service as model_service
-import services.data_service as data_service
 import time
 import numpy as np
 
+import services.logger as logger
+import services.model_service as model_service
+import services.data_service as data_service
+import services.text_service as text_service
+
 from services.model_service import Model
-from utility.ann import ANN
+from utility.ann import NeuralNetwork
 from multiprocessing import Pool
 from uuid import uuid4
 
@@ -29,9 +31,6 @@ from keras.layers import Dense, Flatten, LSTM
 from keras.layers.convolutional import Conv1D, MaxPooling1D
 from keras.layers.embeddings import Embedding
 
-from nltk.stem.porter import PorterStemmer
-from nltk.corpus import stopwords
-
 from services.exception import CleaningInProgressError
 from services.exception import TrainingInProgressError
 from services.exception import ClassifierNotReadyError
@@ -45,6 +44,7 @@ MODEL_TYPE = 'STOCKV2'
 # Try to load the vectorizer & classfier
 classifier = None
 vectorizer = None
+tokenizer = None
 label_encoder = None
 one_hot_encoder = None
 
@@ -54,6 +54,7 @@ if model_id is not None:
 
     classifier = model.predictor
     vectorizer = model.vectorizor
+    tokenizer = model.tokenizer
     label_encoder = model.label_encoder
     one_hot_encoder = model.one_hot_encoder
 
@@ -61,44 +62,7 @@ if model_id is not None:
 # endif
 
 # Begin stockv2 functions --------------------------------------------------------------------------------------------------
-def clean_text_single(data):
-    text = data['Body']
-    value = 1 if float(data['price_diff']) > 0 else 0
 
-    clean_text = re.sub('[^a-zA-Z]', ' ', text) # Replace all non letters with spaces
-    clean_text = clean_text.lower() # Set the entire text to lower case
-    clean_text = clean_text.split() # Split the text into it's individual words
-
-    # Remove words that don't contribute anything (like the, a, this, etc.)
-    # Also apply stemming aka getting the root of words
-    ps = PorterStemmer()
-    clean_text = [ps.stem(word) for word in clean_text if not word in set(stopwords.words('english'))]
-    clean_text = ' '.join(clean_text) # Put the string back together
-
-    return (clean_text, value)
-# end clean_single()
-
-def clean(data):
-    global is_cleaning
-
-    if is_cleaning == True:
-        raise CleaningInProgressError()
-
-    # Clean the text
-    if len(data) > config.STOCK_V2_SINGLE_THREAD_CUTOFF:
-        logger.log('Cleaning text.')
-        is_cleaning = True
-
-        pool = Pool(processes=8)
-        clean_data = pool.map(clean_text_single, data)
-        
-        is_cleaning = False
-        logger.log('Cleaning complete.')
-    else:
-        clean_data = map(clean_text_single, data)
-
-    return list(clean_data)
-# clean()
 
 def predict_single(text):
     global classifier_ready
@@ -106,11 +70,11 @@ def predict_single(text):
     if not classifier_ready:
         raise ClassifierNotReadyError()
 
-    clean_data = clean_text_single({'text': text, 'value': None})
+    clean_data = text_service.clean_text_single({'Body': text, 'price_diff': 0.0})
 
-    vectorized_text = vectorizer.transform([clean_data[0]]).toarray()
+    transformed_text = vectorizer.transform([clean_data[0]]).toarray() if vectorizer is not None else tokenizer.texts_to_sequences([clean_data[0]])
 
-    prediction = classifier.predict(vectorized_text)
+    prediction = classifier.predict(transformed_text)
 
     prediction = label_encoder.inverse_transform(np.array(one_hot_encoder.inverse_transform(prediction)).ravel())
 
@@ -123,11 +87,11 @@ def predict_single_raw(text):
     if not classifier_ready:
         raise ClassifierNotReadyError()
 
-    clean_data = clean_text_single({'text': text, 'value': None})
+    clean_data = text_service.clean_text_single({'text': text, 'value': None})
 
-    vectorized_text = vectorizer.transform([clean_data[0]]).toarray()
+    transformed_text = vectorizer.transform([clean_data[0]]).toarray() if vectorizer is not None else tokenizer.texts_to_sequences()
 
-    prediction = classifier.predict(vectorized_text)
+    prediction = classifier.predict(transformed_text)
 
     prediction = np.array(one_hot_encoder.inverse_transform(prediction)).ravel()
 
@@ -143,7 +107,7 @@ def train_clean(dataset_id):
 
 def train_dirty(dataset):
     # Clean the dataset
-    dataset.data = clean(dataset.data)
+    dataset.data = text_service.clean(dataset.data)
 
     # Save the cleaned dataset
     data_service.save_dataset(dataset)
@@ -153,7 +117,7 @@ def train_dirty(dataset):
 # end train_dirty()
 
 def build_ann(epochs, batch_size):
-    classifier = ANN('SEQUENTIAL', epochs, batch_size) 
+    classifier = NeuralNetwork('SEQUENTIAL', epochs, batch_size) 
     classifier.add(Dense(units=500, activation='relu', input_dim=config.STOCK_V2_BAG_OF_WORDS_SIZE))
     classifier.add(Dense(units=250, activation='relu'))
     classifier.add(Dense(units=1, activation='sigmoid'))
@@ -168,7 +132,7 @@ def build_ann(epochs, batch_size):
 # end build_ann()
 
 def build_cnn(max_len, num_words):
-    classifier = ANN('SEQUENTIAL', 10) 
+    classifier = NeuralNetwork('SEQUENTIAL', 10) 
     classifier.add(Embedding(input_dim=num_words, output_dim=32, input_length=max_len)) # use bag of words size when applicable
     classifier.add(Conv1D(32, 3, padding='same', activation='relu'))
     classifier.add(MaxPooling1D())
@@ -188,7 +152,7 @@ def build_cnn(max_len, num_words):
 def build_lstm(sequence_length, n_words, batch_size=100):
     units1, units2 = int(n_words/4), int(n_words/8)
 
-    classifier = ANN('SEQUENTIAL', epochs=10, batch_size=batch_size) 
+    classifier = NeuralNetwork('SEQUENTIAL', epochs=10, batch_size=batch_size) 
     classifier.add(Embedding(input_dim=n_words, output_dim=units1, input_length=sequence_length, trainable=True)) # Embed the text sequences
     classifier.add(LSTM(units=units2, return_sequences=False))
     classifier.add(Dense(units=1, activation='sigmoid'))
@@ -247,6 +211,7 @@ def max_length(array):
 def train(dataset):
     global is_training
     global vectorizer
+    global tokenizer
     global classifier
     global classifier_ready
     global label_encoder
@@ -273,6 +238,7 @@ def train(dataset):
     X = np.array([np.array(xi) for xi in tokenizer.texts_to_sequences(X)])
     X = pad_sequences(X, padding='post', value=0)
     sequence_length = len(X[0])
+    tokenizer.max_length = sequence_length
     n_words = len(tokenizer.word_index)
 
     # Reduce the size of the array

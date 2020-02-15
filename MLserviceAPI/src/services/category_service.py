@@ -28,7 +28,7 @@ from nltk.corpus import stopwords
 from services.exception import CleaningInProgressError
 from services.exception import TrainingInProgressError
 from services.exception import ClassifierNotReadyError
-from utility.ann import ANN
+from utility.ann import NeuralNetwork
 
 from multiprocessing import Pool
 from uuid import uuid4
@@ -196,7 +196,7 @@ def train(dataset):
     # classifier = GaussianNB() # acc: 30%, 3%
 
     # ANN classifier acc: 67%, 81%
-    # classifier = ANN('SEQUENTIAL', 10) 
+    # classifier = NeuralNetwork'SEQUENTIAL', 10) 
     # classifier.add(Dense(activation='relu', input_dim=config.CATEGORY_BAG_OF_WORDS_SIZE, units=250))
     # classifier.add(Dense(activation='softmax', units=num_categories))
 
