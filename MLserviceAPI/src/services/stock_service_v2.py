@@ -14,22 +14,13 @@ from utility.ann import NeuralNetwork
 from multiprocessing import Pool
 from uuid import uuid4
 
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder, OrdinalEncoder
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.ensemble import RandomForestClassifier
 
-from keras.preprocessing.sequence import pad_sequences
-from keras.preprocessing.text import Tokenizer, one_hot
-from keras.optimizers import SGD, RMSprop, Adam
-from keras.layers import Dense, Flatten, LSTM
-from keras.layers.convolutional import Conv1D, MaxPooling1D
-from keras.layers.embeddings import Embedding
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.optimizers import SGD, RMSprop, Adam
+from tensorflow.keras.layers import Dense, Flatten, LSTM, Conv1D, MaxPooling1D, Embedding
 
 from services.exception import CleaningInProgressError
 from services.exception import TrainingInProgressError
@@ -115,46 +106,15 @@ def train_dirty(dataset):
     # Train
     train(dataset)
 # end train_dirty()
-
-def build_ann(epochs, batch_size):
-    classifier = NeuralNetwork('SEQUENTIAL', epochs, batch_size) 
-    classifier.add(Dense(units=500, activation='relu', input_dim=config.STOCK_V2_BAG_OF_WORDS_SIZE))
-    classifier.add(Dense(units=250, activation='relu'))
-    classifier.add(Dense(units=1, activation='sigmoid'))
-
-    # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
-    optimizer = 'adam' # Best: all about the same
-
-    classifier.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
-
-    return classifier
-
-# end build_ann()
-
-def build_cnn(max_len, num_words):
-    classifier = NeuralNetwork('SEQUENTIAL', 10) 
-    classifier.add(Embedding(input_dim=num_words, output_dim=32, input_length=max_len)) # use bag of words size when applicable
-    classifier.add(Conv1D(32, 3, padding='same', activation='relu'))
-    classifier.add(MaxPooling1D())
-    classifier.add(Flatten())
-    classifier.add(Dense(250, activation='relu'))
-    classifier.add(Dense(1, activation='sigmoid'))
-    classifier.compile(loss='binary_crossentropy', optimizer=Adam(lr=0.001), metrics=['accuracy'])
-
-    # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
-    optimizer = 'adam' # Best: all about the same
-
-    classifier.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
-
-    return classifier
-# end build_cnn()
     
-def build_lstm(sequence_length, n_words, batch_size=100):
-    units1, units2 = int(n_words/4), int(n_words/8)
+def build_lstm(sequence_length, n_words, starting_output_dim, batch_size=100):
+    mem_size_GB = ((starting_output_dim * sequence_length * batch_size * 8) / 1000000000)
+    if mem_size_GB > config.MAX_MEMORY_GB:
+        raise Exception('Network is configured to use more than available RAM. Total size of current network: ' + str(mem_size_GB) + 'GB')
 
     classifier = NeuralNetwork('SEQUENTIAL', epochs=10, batch_size=batch_size) 
-    classifier.add(Embedding(input_dim=n_words, output_dim=units1, input_length=sequence_length, trainable=True)) # Embed the text sequences
-    classifier.add(LSTM(units=units2, return_sequences=False))
+    classifier.add(Embedding(input_dim=n_words, output_dim=starting_output_dim, input_length=sequence_length, trainable=True)) # Embed the text sequences
+    classifier.add(LSTM(units=int(starting_output_dim / 2), return_sequences=False))
     classifier.add(Dense(units=1, activation='sigmoid'))
 
     # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
@@ -162,51 +122,6 @@ def build_lstm(sequence_length, n_words, batch_size=100):
 
     return classifier
 # end build_ltsm()
-
-def find_best_params(X, y):
-    logger.log('Finding the best parameters')
-
-    # parameters for KNeighborsClassifier
-    # parameters = {
-    #     'n_neighbors': range(3, 20), # best: 16
-    #     'weights': ['uniform', 'distance'], # best: distance
-    #     'metric': ['euclidean', 'minkowski', 'manhattan'], # best: minkowski
-    #     'p': range(1,5) # best: 1
-    # }
-
-    # parameters for RandomForestClassifier
-    # parameters = {
-    #     'n_estimators': [1, 5, 10, 100, 250, 500], # best: 500
-    #     'criterion': ['gini', 'entropy'] # best: entropy
-    # }
-
-    parameters = {
-        'n_estimators': [500, 750, 1000, 2000], # best: 500
-        'criterion': ['entropy'] # best: entropy
-    }
-
-    start = time.time()
-    grid_search = GridSearchCV(estimator = RandomForestClassifier(), 
-                            param_grid = parameters,
-                            scoring = 'accuracy',
-                            cv = 10,
-                            pre_dispatch=8,
-                            n_jobs=-1)
-
-    grid_search = grid_search.fit(X, y)
-    end = time.time()
-    final_time = end - start
-
-    best_accuracy = grid_search.best_score_
-    best_parameters = grid_search.best_params_
-    logger.log('Best accuracy: ' + best_accuracy + '\nBest Parameters: ' + best_parameters + '\nTraining complete. In order to save model please re-run with the given parameters.')
-    logger.log('Debug here')
-# end find_best_params()
-
-def max_length(array):
-    if(not isinstance(array, list)): return(0)
-    return(max([len(array),] + [len(subl) for subl in array if isinstance(subl, list)] + [max_length(subl) for subl in array]))
-# end max_length
 
 def train(dataset):
     global is_training
@@ -226,35 +141,24 @@ def train(dataset):
 
     X, y = zip(*dataset.data)
 
-    # Note: This should only be used for Bag of Words Models
-    # logger.log('Vectorizing the data.') 
-    # vectorizer = TfidfVectorizer(max_features=config.STOCK_V2_BAG_OF_WORDS_SIZE)
-    # X = vectorizer.fit_transform(X).toarray()
+    y = np.asarray(y)
 
     # Note: This should only be used for Embedded models
     logger.log('Encoding the data.')
     tokenizer = Tokenizer(num_words=config.STOCK_V2_BAG_OF_WORDS_SIZE)
     tokenizer.fit_on_texts(X)
     X = np.array([np.array(xi) for xi in tokenizer.texts_to_sequences(X)])
-    X = pad_sequences(X, padding='post', value=0)
+    X = pad_sequences(X, padding='post', value=0, maxlen=500) # Only ~3% of articles are greater than 500 words
     sequence_length = len(X[0])
     tokenizer.max_length = sequence_length
-    n_words = len(tokenizer.word_index)
-
-    # Reduce the size of the array
-    X = X.astype('uint16')
+    n_words = config.STOCK_V2_BAG_OF_WORDS_SIZE
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=config.TRAINING_SET_SIZE)
     
     logger.log('Fitting the model.')
     start = time.time()
 
-    # classifier = KNeighborsClassifier(n_neighbors = 16, metric = 'minkowski', p = 1, weights='distance') # acc: 57.37% std_dev: 2.87%
-    # classifier = RandomForestClassifier(n_estimators=1000, criterion='entropy', n_jobs=-1) # acc: 52.72% std_dev: 6.45%
-    # classifier = GaussianNB() # acc: 49.51% std_dev: 5.78%
-    # classifier = build_ann(epochs=10, batch_size=len(X_train)) # acc: Bag of Words - 55-60%
-    # classifier = build_cnn() # acc: Bag of Words - 58.62%
-    classifier = build_lstm(sequence_length, n_words, batch_size=int(len(X_train) / 8)) # acc: 
+    classifier = build_lstm(sequence_length, n_words, starting_output_dim=8, batch_size=1024) # acc: 
 
     classifier.fit(X_train, y_train)
 
@@ -265,11 +169,6 @@ def train(dataset):
     # find_best_params(X, y)
 
     logger.log('Determining accuracy.')
-
-    # Acc for statistical models
-    # accuracies = cross_val_score(estimator=classifier, X=X, y=y, cv=10, n_jobs=-1)
-    # avg_accuracy = accuracies.mean() * 100
-    # std_dev = accuracies.std() * 100
 
     # Acc for ANN:
     avg_accuracy = classifier.evaluate(X_test, y_test)

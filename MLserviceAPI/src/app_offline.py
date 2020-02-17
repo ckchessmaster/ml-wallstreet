@@ -1,13 +1,13 @@
 if __name__ == '__main__':
-    import sys
     import os
     os.chdir(os.path.dirname(__file__) + '/..')
     # os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
     # os.environ["PLAIDML_USE_STRIPE"] = "1"
 
-    import csv
+    import sys
     maxInt = sys.maxsize
 
+    import csv
     while True:
         # decrease the maxInt value by factor 10 
         # as long as the OverflowError occurs.
@@ -20,28 +20,34 @@ if __name__ == '__main__':
         # end try/catch
     # end while
 
+    from uuid import uuid4
     import services.stock_service_v2 as stock_service_v2
+    import services.data_service as data_service
 
     # Vars
     dataset_path = 'C:\\Users\\ckche\Desktop\\ML Stock Project\\datasets\\StockTraining\\all-the-news\\all-the-news.csv'
-    dataset_id = None
+    dataset_id = 'ebdb9498-df05-473d-93ea-8f22d6696ece'
 
     # MAIN ------------------------------------------------------------------------------------------------------
     if dataset_id is not None:
         stock_service_v2.train_clean(dataset_id)
     else:
-        # load the data into a dict
-        dataset = type('',(object,),{})()
+        # load the dataset
+        dataset_info = {
+            "_id": str(uuid4()),
+            "name": 'all-the-news',
+            "model_type": 'STOCKV2'
+        }
 
-        dataset.data = []
+        data = []
         with open(dataset_path, encoding='utf-8') as infile:
             reader = csv.DictReader(infile)
             for row in reader:
-                dataset.data.append(row)
+                data.append(row)
         # end with
+
+        dataset = data_service.Dataset(dataset_info, data)
         
-        # Remove row 0
-
-
+        # Train
         stock_service_v2.train_dirty(dataset)
     #endif

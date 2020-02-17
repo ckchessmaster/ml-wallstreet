@@ -18,8 +18,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 
-from keras.layers import Dense
-from keras.optimizers import SGD
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import SGD
 
 from utility.ann import NeuralNetwork
 from multiprocessing import Pool
