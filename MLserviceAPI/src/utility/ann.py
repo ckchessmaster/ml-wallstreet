@@ -1,6 +1,6 @@
 import os
 
-from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.models import Sequential, load_model, save_model
 
 import services.logger as logger
 
@@ -27,8 +27,9 @@ class NeuralNetwork:
 
     def load(self, file_path):
         try:
-            self.model = load_model(file_path)
-            logger.log('ANN loaded.')
+            self.model = load_model(file_path + '.h5')
+            logger.log('Model loaded.')
+            self.model.summary()
             return True
         except Exception as e:
             logger.log_error(e)
@@ -50,8 +51,8 @@ class NeuralNetwork:
 
     def save(self, file_path):
         try:
-            self.model.save(file_path)
-            logger.log('ANN saved.')
+            self.model.save(file_path + '.h5')
+            logger.log('Model saved.')
             return True
         except Exception as e:
             logger.log_error(e)

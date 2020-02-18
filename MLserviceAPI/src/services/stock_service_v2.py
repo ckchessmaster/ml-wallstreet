@@ -32,61 +32,37 @@ is_training = False
 is_cleaning = False
 MODEL_TYPE = 'STOCKV2'
 
-# Try to load the vectorizer & classfier
+# Try to load the tokenizer & classfier
 classifier = None
-vectorizer = None
 tokenizer = None
-label_encoder = None
-one_hot_encoder = None
 
 model_id = model_service.find_current_model_by_model_type(MODEL_TYPE)
 if model_id is not None:
     model = model_service.get_model(model_id)
 
     classifier = model.predictor
-    vectorizer = model.vectorizor
     tokenizer = model.tokenizer
-    label_encoder = model.label_encoder
-    one_hot_encoder = model.one_hot_encoder
 
     classifier_ready = True
 # endif
 
 # Begin stockv2 functions --------------------------------------------------------------------------------------------------
-
-
-def predict_single(text):
+def predict(texts):
     global classifier_ready
 
     if not classifier_ready:
         raise ClassifierNotReadyError()
 
-    clean_data = text_service.clean_text_single({'Body': text, 'price_diff': 0.0})
+    data = list(map(lambda text: { 'Body': text, 'price_diff': 0.0 }, texts))
+    clean_data = text_service.clean(data)
 
-    transformed_text = vectorizer.transform([clean_data[0]]).toarray() if vectorizer is not None else tokenizer.texts_to_sequences([clean_data[0]])
+    transformed_texts, _ = zip(*clean_data)
+    transformed_texts = np.array([np.array(xi) for xi in tokenizer.texts_to_sequences(transformed_texts)])
+    transformed_texts = pad_sequences(transformed_texts, maxlen=tokenizer.max_length, padding='post', value=0)
 
-    prediction = classifier.predict(transformed_text)
+    predictions = classifier.predict(transformed_texts)
 
-    prediction = label_encoder.inverse_transform(np.array(one_hot_encoder.inverse_transform(prediction)).ravel())
-
-    return prediction[0]
-# end predict()
-
-def predict_single_raw(text):
-    global classifier_ready
-
-    if not classifier_ready:
-        raise ClassifierNotReadyError()
-
-    clean_data = text_service.clean_text_single({'text': text, 'value': None})
-
-    transformed_text = vectorizer.transform([clean_data[0]]).toarray() if vectorizer is not None else tokenizer.texts_to_sequences()
-
-    prediction = classifier.predict(transformed_text)
-
-    prediction = np.array(one_hot_encoder.inverse_transform(prediction)).ravel()
-
-    return prediction[0]
+    return predictions
 # end predict()
 
 def train_clean(dataset_id):
@@ -125,12 +101,9 @@ def build_lstm(sequence_length, n_words, starting_output_dim, batch_size=100):
 
 def train(dataset):
     global is_training
-    global vectorizer
     global tokenizer
     global classifier
     global classifier_ready
-    global label_encoder
-    global one_hot_encoder
 
     if is_training == True:
         raise TrainingInProgressError()
@@ -158,7 +131,7 @@ def train(dataset):
     logger.log('Fitting the model.')
     start = time.time()
 
-    classifier = build_lstm(sequence_length, n_words, starting_output_dim=8, batch_size=1024) # acc: 
+    classifier = build_lstm(sequence_length, n_words, starting_output_dim=256, batch_size=1024) # acc: 
 
     classifier.fit(X_train, y_train)
 
@@ -179,15 +152,13 @@ def train(dataset):
     model_info = {
         '_id': str(uuid4()),
         'model_type': MODEL_TYPE,
-        'has_vectorizor': True,
-        'has_encoders': True,
         'is_current_model': True,
         'acc': avg_accuracy,
         'std_dev': std_dev,
         'use_keras_save': True
     }
 
-    model = Model(model_info, classifier, vectorizor=None, tokenizer=tokenizer)
+    model = Model(model_info, classifier, tokenizer=tokenizer)
     model_service.save_model(model)
 
     is_training = False

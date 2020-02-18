@@ -33,29 +33,30 @@ def get_model(model_id):
 
     if 'use_keras_save' in model_info and model_info['use_keras_save'] == True:
         model = NeuralNetwork()
-        model.load('models/' + model_id + '.mdl')
+        model.load('models/' + model_id)
     else:
         model = pickle.load(open('models/' + model_id + '.mdl', 'rb'))
 
     vectorizor = None
-    if model_info['has_vectorizor'] == True:
-        vectorizor = pickle.load(open('models/' + model_id + '.vec', 'rb'))
-
     label_encoder = None
     one_hot_encoder = None
     tokenizer = None
-    if 'has_encoders' in model_info and model_info['has_encoders'] == True:
-        label_encoder_path = 'models/' + model_id + '.lbl'
-        if path.exists(label_encoder_path):
-            label_encoder = pickle.load(open(label_encoder_path, 'rb'))
 
-        one_hot_encoder_path = 'models/' + model_id + '.ohe'
-        if path.exists(one_hot_encoder_path):
-            one_hot_encoder = pickle.load(open(one_hot_encoder_path, 'rb'))
+    vectorizor_path = 'models/' + model_id + '.vec'
+    if path.exists(vectorizor_path):
+        vectorizor = pickle.load(open('models/' + model_id + '.vec', 'rb'))
 
-        tokenizer_path  = 'models/' + model_id + '.tok'
-        if path.exists(tokenizer_path):
-            tokenizer = pickle.load(open(tokenizer_path, 'rb'))
+    label_encoder_path = 'models/' + model_id + '.lbl'
+    if path.exists(label_encoder_path):
+        label_encoder = pickle.load(open(label_encoder_path, 'rb'))
+
+    one_hot_encoder_path = 'models/' + model_id + '.ohe'
+    if path.exists(one_hot_encoder_path):
+        one_hot_encoder = pickle.load(open(one_hot_encoder_path, 'rb'))
+
+    tokenizer_path  = 'models/' + model_id + '.tok'
+    if path.exists(tokenizer_path):
+        tokenizer = pickle.load(open(tokenizer_path, 'rb'))
     # endif
 
     return Model(model_info, model, vectorizor, label_encoder, one_hot_encoder, tokenizer)
@@ -84,16 +85,17 @@ def save_model(model):
         os.makedirs(folder_path)
 
     if 'use_keras_save' in model.info and model.info['use_keras_save'] == True:
-        model.predictor.save(folder_path + model_id + '.mdl')
+        model.predictor.save(folder_path + model_id)
     else:
         pickle.dump(model.predictor, open(folder_path + model_id + '.mdl', 'wb'))
-
-    if model.info['has_vectorizor']:
+        
+    if model.vectorizor is not None:
         pickle.dump(model.vectorizor, open(folder_path + model_id + '.vec', 'wb'))
-
-    if 'has_encoders' in model.info and model.info['has_encoders'] == True:
+    if model.label_encoder is not None:
         pickle.dump(model.label_encoder, open(folder_path + model_id + '.lbl', 'wb'))
+    if model.one_hot_encoder is not None:
         pickle.dump(model.one_hot_encoder, open(folder_path + model_id + '.ohe', 'wb'))
+    if model.tokenizer is not None:
         pickle.dump(model.tokenizer, open(folder_path + model_id + '.tok', 'wb'))
     # endif
 
