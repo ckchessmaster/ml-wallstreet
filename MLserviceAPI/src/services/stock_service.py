@@ -151,7 +151,7 @@ def train_dirty(dataset):
 # end train_dirty()
 
 def build_ann():
-    classifier = NeuralNetwork'SEQUENTIAL', 10) 
+    classifier = NeuralNetwork('SEQUENTIAL', 10) 
     classifier.add(Dense(units=2, activation='relu', input_dim=2))
     classifier.add(Dense(units=1, activation='sigmoid'))
 

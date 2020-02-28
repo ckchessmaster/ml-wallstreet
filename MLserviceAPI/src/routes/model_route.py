@@ -173,6 +173,31 @@ def train_existing(model_type, dataset_id):
     return jsonify({ 'message': 'Training started.' })
 # end train_existing
 
+@model_api.route('/<model_type>/predict', methods=['POST'])
+def predict_many(model_type):
+    json_body = request.get_json()
+
+    # Validate required parameters
+    if json_body is None:
+        return jsonify({"message":"Missing required training data."}), 400
+    elif 'texts' not in json_body:
+        return jsonify({"message":"Missing required texts."}), 400
+
+    results = None
+
+    if model_type == STOCK_V2_MODEL_TYPE:
+        try:
+            results = stock_service_v2.predict(json_body['texts'])
+        except Exception as e:
+            logger.log_error('Error trying to predict sentiment. ' + str(e.args))
+            return jsonify({"message": config.INTERNAL_ERROR_MESSAGE}), 500
+    else:
+        return jsonify({"message": "Model not found."}), 400
+    # endif
+
+    return jsonify({ "results": results.tolist() })
+# end predict_single()
+
 @model_api.route('/<model_type>/predict', methods=['GET'])
 def predict_single(model_type):
     input_text = request.args.get('inputText')
@@ -202,7 +227,7 @@ def predict_single(model_type):
             return jsonify({"message": config.INTERNAL_ERROR_MESSAGE}), 500
     elif model_type == STOCK_V2_MODEL_TYPE:
         try:
-            result = stock_service_v2.predict_single(input_text)
+            result = stock_service_v2.predict(input_text)
         except Exception as e:
             logger.log_error('Error trying to predict sentiment. ' + str(e.args))
             return jsonify({"message": config.INTERNAL_ERROR_MESSAGE}), 500
