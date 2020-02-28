@@ -76,7 +76,8 @@ namespace MLWLive
             // Lets try our luck!
             Console.WriteLine("Attempting to buy/sell stock...");
             var stockBroker = serviceProvider.GetService<StockBroker>();
-            await stockBroker.HandlePredictions(articles);
+            string message = await stockBroker.HandlePredictions(articles);
+            Console.WriteLine(message);
 
             Console.WriteLine($"Process complete. Current time is: {DateTime.Now}");
         }

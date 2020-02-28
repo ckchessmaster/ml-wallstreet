@@ -63,7 +63,7 @@ namespace MLWLive.Stock
             await portfolioCollection.UpdateOneAsync(filter, update);
         }
 
-        public async Task HandlePredictions(IEnumerable<Article> articles)
+        public async Task<string> HandlePredictions(IEnumerable<Article> articles)
         {
             if (articles == null)
             {
@@ -86,11 +86,17 @@ namespace MLWLive.Stock
             if (decision >= 1)
             {
                 await BuyStock();
+                return "Bought 1 share of stock.";
 
             }
             else if (decision <= -1)
             {
                 await SellStock();
+                return "Sold 1 share of stock.";
+            }
+            else
+            {
+                return "Prediction not conclusive. No changes.";
             }
         }
 
