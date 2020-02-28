@@ -18,8 +18,10 @@ namespace MLWLive
             var test = serviceProvider.GetService<StockBroker>();
             //await test.AddFunds(1000000M);
             //await test.BuyStock();
-            await test.SellStock();
+            // await test.SellStock();
 
+            var asdf = await test.GetCurrentStockPrice();
+            Console.WriteLine();
             //var manager = new Manager(serviceProvider, new List<NewsStand>() { serviceProvider.GetService<ContextualWebNews>() });
 
             //manager.Start();

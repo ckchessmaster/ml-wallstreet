@@ -5,12 +5,17 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Web;
+using System.Net.Http;
+using System.Text.Json;
 
 namespace MLWLive.Stock
 {
     public class StockBroker
     {
         private readonly IMongoCollection<Portfolio> portfolioCollection;
+        private readonly IConfiguration config;
+        private readonly IHttpClientFactory clientFactory;
 
         // TODO: Include the ability to have multiple portfolios
         private const string portfolioId = "31c58f53-cf44-4707-ace9-c36fe0a5751e";
@@ -19,8 +24,15 @@ namespace MLWLive.Stock
         private const string stockTicker = "MSFT";
         private const string stockName = "Microsoft";
 
-        public StockBroker(IConfiguration config)
+        // Make the last retrieval a day behind so that the first hit will go ahead and get the current price
+        private DateTime lastPriceRetrieval = DateTime.Now.AddDays(-1);
+        private decimal currentStockPrice = 0.0M;
+
+        public StockBroker(IConfiguration config, IHttpClientFactory clientFactory)
         {
+            this.config = config;
+            this.clientFactory = clientFactory;
+
             var client = new MongoClient(config.GetValue<string>("mongo:connection-string"));
             var database = client.GetDatabase(config.GetValue<string>("mongo:database-name"));
 
@@ -147,9 +159,48 @@ namespace MLWLive.Stock
             await portfolioCollection.UpdateOneAsync(filter, update);
         }
 
-        private async Task<decimal> GetCurrentStockPrice()
+        public async Task<decimal> GetCurrentStockPrice()
         {
-            return 100.0M;
+            // We want to update the price every hour
+            if (lastPriceRetrieval < DateTime.Now.AddHours(-1))
+            {
+                string rapidApiHost = config.GetValue<string>("api:alpha-vantage:x-rapidapi-host");
+                string rapidApiKey = config.GetValue<string>("api:alpha-vantage:x-rapidapi-key");
+
+                var uriBuilder = new UriBuilder("https://" + rapidApiHost + "/query");
+                var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+                query["function"] = "GLOBAL_QUOTE";
+                query["symbol"] = stockTicker.ToUpper();
+                query["datatype"] = "json";
+                uriBuilder.Query = query.ToString();
+
+                using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uriBuilder.ToString());
+                request.Headers.Add("x-rapidapi-host", rapidApiHost);
+                request.Headers.Add("x-rapidapi-key", rapidApiKey);
+
+                using HttpClient client = clientFactory.CreateClient();
+                var response = await client.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    string responseJson = await response.Content.ReadAsStringAsync();
+
+                    using JsonDocument document = JsonDocument.Parse(responseJson);
+                    JsonElement root = document.RootElement;
+                    JsonElement quote = root.GetProperty("Global Quote");
+                    JsonElement price = quote.GetProperty("05. price");
+
+                    return Convert.ToDecimal(price.GetString());
+                }
+                else
+                {
+                    throw new Exception("Api returned with status code: " + response.StatusCode.ToString());
+                }
+            }
+            else
+            {
+                return currentStockPrice;
+            }
         }
 
         // TODO: May not need this...
