@@ -22,7 +22,7 @@ namespace MLWLive.News
             articleCollection = database.GetCollection<Article>(Article.CollectionName);
         }
 
-        public abstract Task<IEnumerable<Article>> GetArticles();
+        public abstract Task<IEnumerable<Article>> GetArticles(DateTime fromPublishedDate);
 
         public virtual async Task SaveArticles(IEnumerable<Article> articles)
         {

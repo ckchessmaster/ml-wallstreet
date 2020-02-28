@@ -21,7 +21,7 @@ namespace MLWLive.News
             this.clientFactory = clientFactory;
         }
 
-        public override async Task<IEnumerable<Article>> GetArticles()
+        public override async Task<IEnumerable<Article>> GetArticles(DateTime fromPublishedDate)
         {
             string rapidApiHost = Config.GetValue<string>("api:contextual-web:x-rapidapi-host");
             string rapidApiKey = Config.GetValue<string>("api:contextual-web:x-rapidapi-key");
@@ -33,7 +33,7 @@ namespace MLWLive.News
             query["pageSize"] = 50.ToString();
             query["q"] = "microsoft"; // TODO: For better results we may want to do multiple searches with different queries
             query["safeSearch"] = false.ToString();
-            query["fromPublishedDate"] = DateTime.Now.AddHours(-1).ToString(); 
+            query["fromPublishedDate"] = fromPublishedDate.ToString(); 
             query["toPublishedDate"] = DateTime.Now.ToString();
             uriBuilder.Query = query.ToString();
 

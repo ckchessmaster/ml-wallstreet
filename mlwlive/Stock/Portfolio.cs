@@ -21,14 +21,14 @@ namespace MLWLive.Stock
         {
             get
             {
-                return Stocks.Sum(s => s.Amount * s.Cost);
+                return Stocks.Sum(s => s.Amount * s.Price);
             }
         }
 
         public Portfolio()
         {
             Id = Guid.NewGuid().ToString();
-            //Stocks = new List<Stock>(); // Lets see if we can do this
+            Stocks = new List<Stock>();
         }
     }
 }

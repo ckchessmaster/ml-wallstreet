@@ -63,6 +63,37 @@ namespace MLWLive.Stock
             await portfolioCollection.UpdateOneAsync(filter, update);
         }
 
+        public async Task HandlePredictions(IEnumerable<Article> articles)
+        {
+            if (articles == null)
+            {
+                throw new ArgumentNullException("Parameter articles cannot be null.");
+            }
+
+            int decision = 0;
+            foreach (Article article in articles)
+            {
+                if (article.Prediction > 0.7)
+                {
+                    decision++;
+                }
+                else if (article.Prediction < 0.3)
+                {
+                    decision--;
+                }
+            }
+
+            if (decision >= 1)
+            {
+                await BuyStock();
+
+            }
+            else if (decision <= -1)
+            {
+                await SellStock();
+            }
+        }
+
         public async Task HandlePrediction(Article article)
         {
             if (article == null)
@@ -82,25 +113,13 @@ namespace MLWLive.Stock
 
         public async Task BuyStock()
         {
-            // Get Current Price
-            decimal stockPrice = await GetCurrentStockPrice();
-
-            // Buy
             var filter = Builders<Portfolio>.Filter
                 .Eq("_id", portfolioId);
 
             var portfolio = (await portfolioCollection.FindAsync<Portfolio>(filter)).First();
-
-            // TODO: Handle this properly
-            if (portfolio.CurrentMoney < stockPrice)
-            {
-                throw new Exception("Not enough money!");
-            }
-
-            decimal newMoney = portfolio.CurrentMoney - stockPrice;
-
             Stock stock = portfolio.Stocks.Where(s => s.Ticker.Equals(stockTicker)).FirstOrDefault();
 
+            bool isNewStock = false;
             if (stock is null)
             {
                 stock = new Stock
@@ -108,14 +127,30 @@ namespace MLWLive.Stock
                     Name = stockName,
                     Ticker = stockTicker,
                     Amount = 1,
-                    Cost = stockPrice
+                    LastPriceCheck = DateTime.Now.AddDays(-1)
                 };
 
+                isNewStock = true;
+            }
+
+            stock.Price = await GetCurrentStockPrice(stock);
+
+            // TODO: Handle this properly
+            if (portfolio.CurrentMoney < stock.Price)
+            {
+                throw new Exception("Not enough money!");
+            }
+
+            // Buy
+            decimal newMoney = portfolio.CurrentMoney - stock.Price;
+            
+            if (isNewStock)
+            {
                 portfolio.Stocks.Add(stock);
             }
             else
             {
-                stock.Amount += 1;
+                stock.Amount++;
             }
 
             var update = Builders<Portfolio>.Update
@@ -127,15 +162,11 @@ namespace MLWLive.Stock
 
         public async Task SellStock()
         {
-            // Get Current Price
-            decimal stockPrice = await GetCurrentStockPrice();
-
             // Sell
             var filter = Builders<Portfolio>.Filter
                 .Eq("_id", portfolioId);
 
             var portfolio = (await portfolioCollection.FindAsync<Portfolio>(filter)).First();
-
             Stock stock = portfolio.Stocks.Where(s => s.Ticker.Equals(stockTicker)).FirstOrDefault();
 
             if (stock is null)
@@ -143,7 +174,7 @@ namespace MLWLive.Stock
                 return; // We don't own any of this stock so just return
             }
 
-            decimal newMoney = portfolio.CurrentMoney + stockPrice;
+            decimal newMoney = portfolio.CurrentMoney + await GetCurrentStockPrice(stock);
 
             stock.Amount -= 1;
 
@@ -159,47 +190,45 @@ namespace MLWLive.Stock
             await portfolioCollection.UpdateOneAsync(filter, update);
         }
 
-        public async Task<decimal> GetCurrentStockPrice()
+        public async Task<decimal> GetCurrentStockPrice(Stock stock)
         {
-            // We want to update the price every hour
-            if (lastPriceRetrieval < DateTime.Now.AddHours(-1))
+            // We only want to check for a new price every half hour
+            if (stock.LastPriceCheck > DateTime.Now.AddMinutes(-30))
             {
-                string rapidApiHost = config.GetValue<string>("api:alpha-vantage:x-rapidapi-host");
-                string rapidApiKey = config.GetValue<string>("api:alpha-vantage:x-rapidapi-key");
+                return stock.Price;
+            }
 
-                var uriBuilder = new UriBuilder("https://" + rapidApiHost + "/query");
-                var query = HttpUtility.ParseQueryString(uriBuilder.Query);
-                query["function"] = "GLOBAL_QUOTE";
-                query["symbol"] = stockTicker.ToUpper();
-                query["datatype"] = "json";
-                uriBuilder.Query = query.ToString();
+            string rapidApiHost = config.GetValue<string>("api:alpha-vantage:x-rapidapi-host");
+            string rapidApiKey = config.GetValue<string>("api:alpha-vantage:x-rapidapi-key");
 
-                using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uriBuilder.ToString());
-                request.Headers.Add("x-rapidapi-host", rapidApiHost);
-                request.Headers.Add("x-rapidapi-key", rapidApiKey);
+            var uriBuilder = new UriBuilder("https://" + rapidApiHost + "/query");
+            var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+            query["function"] = "GLOBAL_QUOTE";
+            query["symbol"] = stock.Ticker.ToUpper();
+            query["datatype"] = "json";
+            uriBuilder.Query = query.ToString();
 
-                using HttpClient client = clientFactory.CreateClient();
-                var response = await client.SendAsync(request);
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uriBuilder.ToString());
+            request.Headers.Add("x-rapidapi-host", rapidApiHost);
+            request.Headers.Add("x-rapidapi-key", rapidApiKey);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    string responseJson = await response.Content.ReadAsStringAsync();
+            using HttpClient client = clientFactory.CreateClient();
+            var response = await client.SendAsync(request);
 
-                    using JsonDocument document = JsonDocument.Parse(responseJson);
-                    JsonElement root = document.RootElement;
-                    JsonElement quote = root.GetProperty("Global Quote");
-                    JsonElement price = quote.GetProperty("05. price");
+            if (response.IsSuccessStatusCode)
+            {
+                string responseJson = await response.Content.ReadAsStringAsync();
 
-                    return Convert.ToDecimal(price.GetString());
-                }
-                else
-                {
-                    throw new Exception("Api returned with status code: " + response.StatusCode.ToString());
-                }
+                using JsonDocument document = JsonDocument.Parse(responseJson);
+                JsonElement root = document.RootElement;
+                JsonElement quote = root.GetProperty("Global Quote");
+                JsonElement price = quote.GetProperty("05. price");
+
+                return Convert.ToDecimal(price.GetString());
             }
             else
             {
-                return currentStockPrice;
+                throw new Exception("Api returned with status code: " + response.StatusCode.ToString());
             }
         }
 

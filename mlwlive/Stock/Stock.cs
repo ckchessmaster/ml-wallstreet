@@ -12,6 +12,8 @@ namespace MLWLive.Stock
 
         public int Amount { get; set; }
 
-        public decimal Cost { get; set; }
+        public decimal Price { get; set; }
+
+        public DateTime LastPriceCheck { get; set; }
     }
 }
