@@ -19,7 +19,7 @@ namespace MLWLive
         private List<Timer> newsTimers = new List<Timer>();
 
         private static readonly DayOfWeek[] weekendDays = { DayOfWeek.Saturday, DayOfWeek.Sunday };
-        private static DateTime lastArticleRetrieval; // TODO: Probably a better way to handle this
+        private static DateTime lastArticleRetrieval = DateTime.Now.AddDays(-1); // TODO: Probably a better way to handle this
 
         public Manager(ServiceProvider serviceProvider, IEnumerable<NewsStand> newsStands)
         {
@@ -42,6 +42,9 @@ namespace MLWLive
                 timer.Start();
 
                 newsTimers.Add(timer);
+
+                // Go ahead and run it once now
+                Tasks(null, null, newsStand, serviceProvider);
             }
 
             Console.WriteLine("Program running. Press enter to exit...");
@@ -64,6 +67,11 @@ namespace MLWLive
             lastArticleRetrieval = DateTime.Now;
             Console.WriteLine($"Retrieved {articles.Count()} articles.");
 
+            if (articles.Count() == 0)
+            {
+                return;
+            }
+
             // Predict results
             Console.WriteLine("Predicting results...");
             var prohpet = serviceProvider.GetService<Prophet>();
@@ -80,6 +88,7 @@ namespace MLWLive
             Console.WriteLine(message);
 
             Console.WriteLine($"Process complete. Current time is: {DateTime.Now}");
+
         }
     }
 }

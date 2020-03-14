@@ -7,14 +7,25 @@ import pandas as pd
 from multiprocessing import Pool
 from functools import partial
 
-
-news_data_location = '../datasets/StockTraining/all-the-news/articles3.csv'
+news_data_location = '../datasets/StockTraining/Microsoft-ContexWeb.csv'
 stock_data_location = '../datasets/StockTraining/MSFT.csv'
 
-def map_stock_price(news_row, stock_data):
-    date_regex = '(\d+\/\d+\/\d+)'
+news_date_string = 'DatePublished'
 
-    date_published = news_row['date']#re.search(date_regex, news_row['Date']).group(1)
+def get_formatted_date(date):
+    # Exctract just the date:
+    date_regex = '(\d+\/\d+\/\d+)'
+    date = re.search(date_regex, date).group(1)
+
+    # Convert to yyy-mm-dd
+    split_date = date.split('/')
+    date = split_date[2] + '-' + split_date[0] + '-' + split_date[1]
+
+    return date
+
+def map_stock_price(news_row, stock_data):
+    date_published = get_formatted_date(news_row[news_date_string])
+
     stock_row = stock_data.loc[stock_data['Date'] == date_published]
 
     if stock_row is not None and stock_row.empty == False:

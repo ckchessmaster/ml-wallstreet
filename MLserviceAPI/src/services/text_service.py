@@ -32,13 +32,14 @@ def clean(data):
     # Clean the text
     if len(data) > config.CLEANER_SINGLE_THREAD_CUTOFF:
         logger.log('Cleaning text.')
-
         pool = Pool(processes=8)
         clean_data = pool.map(clean_text_single, data)
-        
         logger.log('Cleaning complete.')
     else:
+        logger.log('Cleaning text.')
         clean_data = map(clean_text_single, data)
-
+        logger.log('Cleaning complete.')
+    #endif
+    
     return list(clean_data)
 # clean()

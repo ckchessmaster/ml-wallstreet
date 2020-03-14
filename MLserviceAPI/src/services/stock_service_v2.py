@@ -85,16 +85,18 @@ def train_dirty(dataset):
     
 def build_lstm(sequence_length, n_words, starting_output_dim, batch_size=100):
     mem_size_GB = ((starting_output_dim * sequence_length * batch_size * 8) / 1000000000)
+    logger.log(f'Current network will take up {mem_size_GB} GB of memory.')
     if mem_size_GB > config.MAX_MEMORY_GB:
         raise Exception('Network is configured to use more than available RAM. Total size of current network: ' + str(mem_size_GB) + 'GB')
 
-    classifier = NeuralNetwork('SEQUENTIAL', epochs=10, batch_size=batch_size) 
+    classifier = NeuralNetwork('SEQUENTIAL', epochs=40, batch_size=batch_size) 
     classifier.add(Embedding(input_dim=n_words, output_dim=starting_output_dim, input_length=sequence_length, trainable=True)) # Embed the text sequences
-    classifier.add(LSTM(units=int(starting_output_dim / 2), return_sequences=False))
+    classifier.add(LSTM(units=int(starting_output_dim / 2), return_sequences=True))
+    classifier.add(LSTM(units=int(starting_output_dim / 4), return_sequences=False))
     classifier.add(Dense(units=1, activation='sigmoid'))
 
     # Other optimizers: rmsprop, adagrad, adam, adadelta, adamax, nadam, SGD(lr=0.01)
-    classifier.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    classifier.compile(optimizer=SGD(learning_rate=0.0001, momentum=0.0), loss='binary_crossentropy', metrics=['accuracy'])
 
     return classifier
 # end build_ltsm()
@@ -121,7 +123,7 @@ def train(dataset):
     tokenizer = Tokenizer(num_words=config.STOCK_V2_BAG_OF_WORDS_SIZE)
     tokenizer.fit_on_texts(X)
     X = np.array([np.array(xi) for xi in tokenizer.texts_to_sequences(X)])
-    X = pad_sequences(X, padding='post', value=0, maxlen=500) # Only ~3% of articles are greater than 500 words
+    X = pad_sequences(X, padding='post', value=0, maxlen=config.MAX_SEQUENCE_LENGTH) # Only ~3% of articles are greater than 500 words
     sequence_length = len(X[0])
     tokenizer.max_length = sequence_length
     n_words = config.STOCK_V2_BAG_OF_WORDS_SIZE
@@ -131,7 +133,7 @@ def train(dataset):
     logger.log('Fitting the model.')
     start = time.time()
 
-    classifier = build_lstm(sequence_length, n_words, starting_output_dim=256, batch_size=1024) # acc: 
+    classifier = build_lstm(sequence_length, n_words, starting_output_dim=3000, batch_size=100) # acc: 
 
     classifier.fit(X_train, y_train)
 

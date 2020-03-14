@@ -30,34 +30,22 @@ namespace MLWLive
                 return accessToken;
             }
 
-            accessToken = await GetNewToken().ConfigureAwait(false);
+            accessToken = await GetNewToken();
 
             return accessToken;
         }
 
         private bool ValidateToken(string token)
         {
-            var validatorParams = new TokenValidationParameters
+            var tokenHandler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwt = tokenHandler.ReadJwtToken(token);
+           
+            if (jwt.ValidTo < DateTime.UtcNow.AddSeconds(10))
             {
-                ValidateAudience = false,
-                ValidateIssuer = false,
-                ValidateIssuerSigningKey = false
-            };
-
-            try
-            {
-                new JwtSecurityTokenHandler().ValidateToken(token, validatorParams, out SecurityToken validatedToken);
-                return true;
+                return false;
             }
-            catch (Exception e)
-            {
-                if (e is SecurityTokenExpiredException)
-                {
-                    return false;
-                }
 
-                throw;
-            }
+            return true;
         }
 
         private async Task<string> GetNewToken()
